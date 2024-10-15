@@ -36,13 +36,11 @@ classdef BrushBot < RobotBaseClass
 
 %% CreateModel
         function CreateModel(self)
-            link(1) = Link('d',0.089159,    'a',0,      'alpha',pi/2,'offset',0,'qlim',[deg2rad(-360),deg2rad(360)]);
-            link(2) = Link('d',0,         'a',-0.425,  'alpha',0,'offset',0,'qlim',[deg2rad(-90),deg2rad(90)]);
-            link(3) = Link('d',0,         'a',-0.39225,'alpha',0,'offset',0,'qlim',[deg2rad(-170),deg2rad(170)]);
-            link(4) = Link('d',0.10915,     'a',0,      'alpha',pi/2,'offset',0,'qlim',[deg2rad(-360),deg2rad(360)]);
-            link(5) = Link('d',0.09465,     'a',0,      'alpha',-pi/2,'offset',0,'qlim',[deg2rad(-360),deg2rad(360)]);
-            link(6) = Link('d',0.0823,     'a',0,      'alpha',0,'offset',0,'qlim',[deg2rad(-360),deg2rad(360)]);           
-
+            link(1) = Link('d',0.089159,    'a',0,      'alpha', pi/2 ,'offset',0,'qlim',[deg2rad(-360),deg2rad(360)]);
+            link(2) = Link('d',0,         'a',-0.225,  'alpha',0,'offset',0,'qlim',[deg2rad(-90),deg2rad(90)]);
+            link(3) = Link('d',0,         'a',-0.2,'alpha',0,'offset',0,'qlim',[deg2rad(-170),deg2rad(170)]);
+            link(4) = Link('d',0,     'a',-0.2,      'alpha',0,'offset',0,'qlim',[deg2rad(-360),deg2rad(360)]);
+            link(5) = Link('d',0,     'a',-0.2,      'alpha',-pi/2,'offset',0,'qlim',[deg2rad(-360),deg2rad(360)]);
             self.model = SerialLink(link,'name',self.name);            
         end    
     end
