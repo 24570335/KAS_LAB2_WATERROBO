@@ -1,12 +1,13 @@
 hold on
 kitchenEnvironment;
-r = UR5_adjusted;
+%r = UR5_adjusted;
     waypoints = [0,0,0;
                 0,0,0;
                 0,0,0;];
     waypoints2 = [0,0,0;
                  0,0,0;
                  0,0,0;];
+br = BrushTESTBot;
 
 % for i = 1:size(waypoints, 1)
 %     %pickup bottle
