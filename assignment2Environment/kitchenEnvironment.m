@@ -19,22 +19,15 @@ classdef kitchenEnvironment < handle
             % Setting up workspace
             workspace = [-4 3 -2 2 0 5];
             axis(workspace);
-            
-            % Setting up chair ply
-            h1 = PlaceObject('chair.ply',[2,0,0]);
-            verts = [get(h1,'Vertices'), ones(size(get(h1,'Vertices'),1),1)]*trotx(-pi/2);
-            set(h1,'Vertices',verts(:,1:3));
     
             % Setting up table, person ply + safety fire extinguisher, emergency stop
-            PlaceObject('tableBrown2.1x1.4x0.5m.ply',[-1,0.5,0]);
+            PlaceObject('table.ply',[-1,0.9,0.15]);
             PlaceObject('personFemaleBusiness.ply',[1.9,0.8,0]);
             PlaceObject('fireExtinguisherElevated.ply',[0.6,1.2,0.45]);
             PlaceObject('bookcaseTwoShelves0.5x0.2x0.5m.ply', [2,1.5,0]);
-            PlaceObject('emergencyStopButton.ply', [-0.1,0.5,0.5]);  
+            PlaceObject('emergencyStopButton.ply', [0.6,0.5,0]);  
             
             % Fence placement parallel and rotated:
-            %PlaceObject('barrier1.5x0.2x1m.ply',[-0.4,0.9,0]);
-            %PlaceObject('barrier1.5x0.2x1m.ply',[-1.9,0.9,0]);
             PlaceObject('barrier1.5x0.2x1m.ply',[-0.4,-0.4,0]);
             PlaceObject('barrier1.5x0.2x1m.ply',[-1.9,-0.4,0]);
 
@@ -91,6 +84,25 @@ classdef kitchenEnvironment < handle
             scalingMatrix = diag([scalingFactor, scalingFactor, scalingFactor]);
             scaledVerts = (scalingMatrix * transformedVerts(:, 1:3)')';
             set(h_sink, 'Vertices', scaledVerts);
+
+            % Table holds to elevate table to same level as the kitchen
+            % sink / other robot:
+            table_hold1 = PlaceObject('table_hold.ply');
+            verts = get(table_hold1,'Vertices');
+            verts_homogeneous = [verts, ones(size(verts, 1), 1)];
+            initial_position = [-1,1.3,0.15];  % Updated y position
+            initial_transform = transl(initial_position)*trotx(pi/2);
+            transformedVerts = (initial_transform * verts_homogeneous')';
+            set(table_hold1,'Vertices',transformedVerts(:,1:3));
+
+            table_hold2 = PlaceObject('table_hold.ply');
+            verts = get(table_hold2,'Vertices');
+            verts_homogeneous = [verts, ones(size(verts, 1), 1)];
+            initial_position = [-2,1.3,0.15];  % Updated y position
+            initial_transform = transl(initial_position)*trotx(pi/2);
+            transformedVerts = (initial_transform * verts_homogeneous')';
+            set(table_hold2,'Vertices',transformedVerts(:,1:3));
+
 
             % Wooden floor image:
             surf([-4,-4;4,4] ...
