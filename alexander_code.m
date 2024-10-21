@@ -1,4 +1,3 @@
-
 centerPoint = [0,0,0];
 radii = [3,2,1];
 [X,Y,Z] = ellipsoid( centerPoint(1), centerPoint(2), centerPoint(3), radii(1), radii(2), radii(3) );
