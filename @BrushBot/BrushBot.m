@@ -22,7 +22,7 @@ classdef BrushBot < RobotBaseClass
             end
           
             self.CreateModel();
-			self.model.base = self.model.base.T; %* transl(-1,1.6,0.82) * trotz(pi());
+			self.model.base = self.model.base.T * transl(-1.2,1.6,0.82) * trotz(pi());
             self.model.tool = self.toolTr;
             self.PlotAndColourRobot();
             drawnow
