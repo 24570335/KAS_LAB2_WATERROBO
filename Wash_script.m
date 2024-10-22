@@ -1,6 +1,6 @@
 hold on
 kitchenEnvironment;
-r = UR5_adjusted;
+r = UR3e_adjusted;
     waypoints = [0,0,0;
                 0,0,0;
                 0,0,0;];

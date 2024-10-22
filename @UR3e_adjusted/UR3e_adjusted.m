@@ -1,4 +1,4 @@
-classdef UR5_adjusted < RobotBaseClass
+classdef UR3e_adjusted < RobotBaseClass
     %% UR5 Universal Robot 5kg payload robot model
     %
     % WARNING: This model has been created by UTS students in the subject
@@ -7,13 +7,13 @@ classdef UR5_adjusted < RobotBaseClass
     % that this matches the real robot!
 
     properties(Access = public)   
-        plyFileNameStem = 'UR5';
+        plyFileNameStem = 'UR3e';
     end
     
     
     methods
 %% Constructor
-        function self = UR5_adjusted(baseTr,useTool,toolFilename)
+        function self = UR3e_adjusted(baseTr,useTool,toolFilename)
             if nargin < 3
                 if nargin == 2
                     error('If you set useTool you must pass in the toolFilename as well');
@@ -28,7 +28,7 @@ classdef UR5_adjusted < RobotBaseClass
             end
           
             self.CreateModel();
-			self.model.base = self.model.base.T * baseTr*transl(-1.5,0.75,0.55)*trotz(pi());
+			self.model.base = self.model.base.T * baseTr *transl(-1.6,0.8,0.82)*trotz(pi());
             self.model.tool = self.toolTr;
             self.PlotAndColourRobot();
             drawnow
@@ -36,12 +36,12 @@ classdef UR5_adjusted < RobotBaseClass
 
 %% CreateModel
         function CreateModel(self)
-            link(1) = Link('d',0.089159,    'a',0,      'alpha',pi/2,'offset',0,'qlim',[deg2rad(-360),deg2rad(360)]);
-            link(2) = Link('d',0,         'a',-0.425,  'alpha',0,'offset',0,'qlim',[deg2rad(-90),deg2rad(90)]);
-            link(3) = Link('d',0,         'a',-0.39225,'alpha',0,'offset',0,'qlim',[deg2rad(-170),deg2rad(170)]);
-            link(4) = Link('d',0.10915,     'a',0,      'alpha',pi/2,'offset',0,'qlim',[deg2rad(-360),deg2rad(360)]);
-            link(5) = Link('d',0.09465,     'a',0,      'alpha',-pi/2,'offset',0,'qlim',[deg2rad(-360),deg2rad(360)]);
-            link(6) = Link('d',0.0823,     'a',0,      'alpha',0,'offset',0,'qlim',[deg2rad(-360),deg2rad(360)]);           
+            link(1) = Link('d',0.15185,'a',0,'alpha',pi/2,'qlim',deg2rad([-360 360]), 'offset',0);
+            link(2) = Link('d',0,'a',-0.24355,'alpha',0,'qlim', deg2rad([-360 360]), 'offset',0);
+            link(3) = Link('d',0,'a',-0.2132,'alpha',0,'qlim', deg2rad([-360 360]), 'offset', 0);
+            link(4) = Link('d',0.13105,'a',0,'alpha',pi/2,'qlim',deg2rad([-360 360]),'offset', 0);
+            link(5) = Link('d',0.08535,'a',0,'alpha',-pi/2,'qlim',deg2rad([-360,360]), 'offset',0);
+            link(6) = Link('d',	0.0921,'a',0,'alpha',0,'qlim',deg2rad([-360,360]), 'offset', 0);     
 
             self.model = SerialLink(link,'name',self.name);            
         end    
