@@ -157,35 +157,34 @@ classdef kitchenEnvironment < handle
 
             % Setting up BOTTLE BODY and applying transformations
             %bottle_body = PlaceObject('BottleBody2.ply', [0,0,0]);  % Place on top of table (adjust coordinates as needed
-            bottle_body = PlaceObject('BottleBody3.ply', [1,1,1]);
-            %{
+            bottle_body = PlaceObject('BottleBody3.ply', [0,0,0]);
+            
             verts = get(bottle_body, 'Vertices');
             verts_homogeneous = [verts, ones(size(verts, 1), 1)];
-            %initial_position = [-500,500,400];  % Updated x,y,z position
+            initial_position = [-1.1,1.1,.82];  % Updated x,y,z position
             rotation_transform = transl(initial_position)*trotx(pi/2);  % Rotate 
             transformedVerts = (rotation_transform * verts_homogeneous')';
             set(bottle_body, 'Vertices', transformedVerts(:, 1:3));
             %scalingFactor = 0.002;
-            scalingMatrix = diag([scalingFactor, scalingFactor, scalingFactor]);
-            scaledVerts = (scalingMatrix * transformedVerts(:, 1:3)')';
-            set(bottle_body, 'Vertices', scaledVerts);
-            %}
-
-            % Setting up BOTTLE CAP and applying transformations
-            bottle_cap = PlaceObject('BottleCap3.ply', [0,0,0.5]);  % Place on top of table, on top of BOTTLE BODY (adjust coordinates as needed
+            % scalingMatrix = diag([scalingFactor, scalingFactor, scalingFactor]);
+            % scaledVerts = (scalingMatrix * transformedVerts(:, 1:3)')';
+            % set(bottle_body, 'Vertices', scaledVerts);
             
-            %{
+            % Setting up BOTTLE CAP and applying transformations
+            bottle_cap = PlaceObject('BottleCap3.ply', [0,0,0]);  % Place on top of table, on top of BOTTLE BODY (adjust coordinates as needed
+            
+            
             verts = get(bottle_cap, 'Vertices');
             verts_homogeneous = [verts, ones(size(verts, 1), 1)];
-            initial_position = [-500,500,525];  % Updated x,y,z position
+            initial_position = [-1.1,1.1,1];  % Updated x,y,z position
             rotation_transform = transl(initial_position)*trotx(pi/2);  % Rotate 
             transformedVerts = (rotation_transform * verts_homogeneous')';
             set(bottle_cap, 'Vertices', transformedVerts(:, 1:3));
-            scalingFactor = 0.002;
-            scalingMatrix = diag([scalingFactor, scalingFactor, scalingFactor]);
-            scaledVerts = (scalingMatrix * transformedVerts(:, 1:3)')';
-            set(bottle_cap, 'Vertices', scaledVerts);
-            %}
+            % scalingFactor = 0.002;
+            % scalingMatrix = diag([scalingFactor, scalingFactor, scalingFactor]);
+            % scaledVerts = (scalingMatrix * transformedVerts(:, 1:3)')';
+            % set(bottle_cap, 'Vertices', scaledVerts);
+            
 
             % Wooden floor image:
             surf([-4,-4;4,4] ...

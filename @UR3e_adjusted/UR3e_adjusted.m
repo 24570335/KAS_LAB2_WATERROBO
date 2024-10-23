@@ -28,7 +28,7 @@ classdef UR3e_adjusted < RobotBaseClass
             end
           
             self.CreateModel();
-			self.model.base = self.model.base.T * baseTr *transl(-1.6,0.8,0.82)*trotz(pi());
+			self.model.base = self.model.base.T * baseTr *transl(-1.6,1,0.82)*trotz(pi()/2);
             self.model.tool = self.toolTr;
             self.PlotAndColourRobot();
             drawnow
@@ -39,9 +39,9 @@ classdef UR3e_adjusted < RobotBaseClass
             link(1) = Link('d',0.15185,'a',0,'alpha',pi/2,'qlim',deg2rad([-360 360]), 'offset',0);
             link(2) = Link('d',0,'a',-0.24355,'alpha',0,'qlim', deg2rad([-360 360]), 'offset',0);
             link(3) = Link('d',0,'a',-0.2132,'alpha',0,'qlim', deg2rad([-360 360]), 'offset', 0);
-            link(4) = Link('d',0.13105,'a',0,'alpha',pi/2,'qlim',deg2rad([-360 360]),'offset', 0);
-            link(5) = Link('d',0.08535,'a',0,'alpha',-pi/2,'qlim',deg2rad([-360,360]), 'offset',0);
-            link(6) = Link('d',	0.0921,'a',0,'alpha',0,'qlim',deg2rad([-360,360]), 'offset', 0);     
+            link(4) = Link('d',0.114,'a',0,'alpha',pi/2,'qlim',deg2rad([-360 360]),'offset', 0);
+            link(5) = Link('d',0.07535,'a',0,'alpha',-pi/2,'qlim',deg2rad([-360,360]), 'offset',0);
+            link(6) = Link('d',	0.0821,'a',0,'alpha',0,'qlim',deg2rad([-360,360]), 'offset', 0);     
 
             self.model = SerialLink(link,'name',self.name);            
         end    
