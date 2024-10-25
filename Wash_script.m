@@ -15,7 +15,7 @@ set(bottleBody, 'Vertices', transformedVertsBody(:, 1:3));
 % Setting up BOTTLE CAP and applying transformations
 bottleCap = PlaceObject('BottleCap3.ply', [0,0,0]);  % Place on top of table, on top of BOTTLE BODY (adjust coordinates as needed
 vertsCap = get(bottleCap, 'Vertices');
-vertsHomogeneousCap = [vertsCap, ones(size(verts, 1), 1)];
+vertsHomogeneousCap = [vertsCap, ones(size(vertsCap, 1), 1)];
 initialPositionCap = [-1.1,1.1,1];  % Updated x,y,z position
 rotationTransformCap = transl(initialPositionCap)*trotx(pi/2);  % Rotate 
 transformedVertsCap = (rotationTransformCap * vertsHomogeneousCap')';
@@ -36,7 +36,7 @@ waypoints2 = [0,-pi/2,0,0,0;
 
 
 % THIS IS NOT WORKING WELL:
-%grip = Gripper;
+grip = Gripper;
 %grip.model.teach
 
 % Gripper ply files OPEN!:
