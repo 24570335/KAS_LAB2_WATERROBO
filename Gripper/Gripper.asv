@@ -30,7 +30,7 @@ classdef Gripper < RobotBaseClass
         %% CreateModel
         function CreateModel(self)
             link(1) = Link('d',-0.1,     'a',0.03,      'alpha',0,'offset',pi,'qlim',[deg2rad(-360),deg2rad(360)]);
-            link(2) = Link('d',-0.1,     'a',0.03,     'alpha',0,'offset',-pi,'qlim',[deg2rad(-270),deg2rad(270)]);
+            link(2) = Link('d',-0.3,     'a',0.03,     'alpha',0,'offset',-pi,'qlim',[deg2rad(-270),deg2rad(270)]);
             link(3) = Link('d',0.03,     'a',0.03,      'alpha',0,'offset',pi/2,'qlim',[deg2rad(-170),deg2rad(170)]);
             link(4) = Link('d',0.03,     'a',-0.03,     'alpha',pi/2,'offset',0,'qlim',[deg2rad(-360),deg2rad(360)]);
           

@@ -56,6 +56,7 @@ for j=1:steps
     drawnow;
 end
 
+
 % Moving UR3e to sink
 q2 = waypoints(2,:);
 qMat = jtraj(q1,q2,steps);
