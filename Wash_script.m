@@ -1,5 +1,3 @@
-clc
-clf
 hold on
 kitchenEnvironment;
 
@@ -14,6 +12,12 @@ waypoints2 = [0,-pi/2,0,0,0;
              0,-109*pi/90,pi*19/90,0,0;
              0,-pi/2,0,0,0;
              0,-109*pi/90,pi*19/90,0,0;];
+
+grip = Gripper;
+% Testing gripper ply files:
+PlaceObject('GripperLink5.ply',[0,-1.5,0.15]);
+PlaceObject('GripperLink3.ply',[0,-0.5,0.15]);
+PlaceObject('GripperLink1.ply',[0,-1,0.15]);
 
 q0 = [0,0,0,0,0,0];
 q0_brush = [0,0,0,0,0];

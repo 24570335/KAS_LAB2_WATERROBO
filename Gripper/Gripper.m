@@ -3,28 +3,14 @@ classdef Gripper < RobotBaseClass
     properties(Access = public)   
         plyFileNameStem = 'Gripper'
     end
-   
     
     methods
 %% Constructor
         function self = Gripper(baseTr)
-            if nargin < 3
-                if nargin == 2
-                    error('If you set useTool you must pass in the toolFilename as well');
-                elseif nargin == 0 % Nothing passed
-                    baseTr = transl(0,0,0);  
-                end             
-            else % All passed in 
-                self.useTool = useTool;
-                toolTrData = load([toolFilename,'.mat']);
-                self.toolTr = toolTrData.tool;
-                self.toolFilename = [toolFilename,'.ply'];
-            end
-          
             self.CreateModel();
-			self.model.base = self.model.base.T * transl(-0.7,1.6,0.82) * trotz(pi());
+			self.model.base = self.model.base.T * transl(0,0,0) * trotz(pi());
             self.model.tool = self.toolTr;
-            self.PlotAndColourRobot();
+            %self.PlotAndColourRobot();
             drawnow
         end
 %% CreateModel

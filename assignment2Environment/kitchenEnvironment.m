@@ -20,6 +20,9 @@ classdef kitchenEnvironment < handle
             workspace = [-4 3 -2 2 0 5];
             axis(workspace);
     
+           
+
+
             % Setting up table, person ply + safety fire extinguisher, emergency stop
             PlaceObject('table.ply',[-1,0.9,0.15]);
             PlaceObject('personFemaleBusiness.ply',[1.9,0.8,0]);
