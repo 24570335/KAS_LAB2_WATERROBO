@@ -1,3 +1,6 @@
+clc
+clf
+
 % Initialising robot and base:
 hold on
 kitchenEnvironment;
