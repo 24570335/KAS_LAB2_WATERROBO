@@ -35,14 +35,8 @@ waypoints2 = [0,-pi/2,0,0,0;
              0,-pi/2,0,0,0];
 
 
-% THIS IS NOT WORKING WELL:
 grip = Gripper;
-%grip.model.teach
 
-% Gripper ply files OPEN!:
-%PlaceObject('GripperLink5.ply',[0,-1.5,0.15]);
-%PlaceObject('GripperLink3.ply',[0,-0.5,0.15]);
-%PlaceObject('GripperLink1.ply',[0,-1,0.15]);
 
 q0 = [0,0,0,0,0,0];
 q0_b = [0,0,0,0,0];
