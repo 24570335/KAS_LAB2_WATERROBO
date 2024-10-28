@@ -37,7 +37,7 @@ classdef kitchenEnvironment < handle
             h8 = PlaceObject('barrier1.5x0.2x1m.ply'); % rotating fence
             verts = get(h8,'Vertices');
             verts_homogeneous = [verts, ones(size(verts, 1), 1)];
-            initial_position = [0.2, 0.5, 0];  % Updated y position
+            initial_position = [0.5, 0.5, 0];  % Updated y position
             initial_transform = transl(initial_position)*trotz(pi/2);
             transformedVerts = (initial_transform * verts_homogeneous')';
             set(h8,'Vertices',transformedVerts(:,1:3));
@@ -45,7 +45,7 @@ classdef kitchenEnvironment < handle
             h82 = PlaceObject('barrier1.5x0.2x1m.ply'); % rotating fence
             verts = get(h82,'Vertices');
             verts_homogeneous = [verts, ones(size(verts, 1), 1)];
-            initial_position = [0.3, 1.2, 0];  % Updated y position
+            initial_position = [0.6, 1.2, 0];  % Updated y position
             initial_transform = transl(initial_position)*trotz(pi/2);
             transformedVerts = (initial_transform * verts_homogeneous')';
             set(h82,'Vertices',transformedVerts(:,1:3));

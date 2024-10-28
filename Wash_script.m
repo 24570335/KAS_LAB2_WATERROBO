@@ -60,9 +60,11 @@ end
 q2 = waypoints(2,:);
 qMat = jtraj(q1,q2,steps);
 q2b = waypoints2(2,:);
-qMatb= jtraj(q1b,q2b,steps);
+qMatb = jtraj(q1b,q2b,steps);
+%qMatg = jtraj(q1b,q2b,steps)
+
 for k=1:steps
-    r.model.animate(qMat(k,:));% Animating the movement to sink
+    r.model.animate(qMat(k,:)); % Animating the movement to sink
     
     lastLinkBody = r.model.fkine(qMat(k,:));
     transformedVertsBody = (lastLinkBody.T * vertsHomogeneousBody')'; % Multiplying new transform by homogenous vertices matrix
@@ -73,10 +75,11 @@ for k=1:steps
     transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
     drawnow;
-    br.model.animate(qMatb(k,:))
+    br.model.animate(qMatb(k,:));
+
+    %grip.model.animate(qMatg(k, :)); % Animating the movement to sink
 
     drawnow;
-    
 end
 
 
