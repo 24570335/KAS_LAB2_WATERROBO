@@ -30,24 +30,17 @@ classdef Gripper < RobotBaseClass
         
         %% CreateModel
         function CreateModel(self)
-            link(1) = Link('d',0,     'a',0,      'alpha',0,'offset',0,'qlim',[deg2rad(-360),deg2rad(360)]);
-            link(2) = Link([0     0       0       0    0]);
-            link(2).qlim = [0 0];
-            self.model = SerialLink(link,'name',self.name);            
-%{
-            % top a = y, d = z, 
-            % Link 1: Rotate by 90 degrees to align z-axis with y-axis
-            link(1) = Link('revolute', 'd', 0, 'a', 0, 'alpha', 0, 'offset', 0, ...
-                           'qlim', [deg2rad(-360), deg2rad(360)]);
             
-            % bottom
-            % Link 2: Prismatic joint to move along the new y-axis
-            link(2) = Link('revolute', 'd', 0, 'a', 0, 'alpha', 0, 'offset', 0, ...
-                           'qlim', [deg2rad(-360), deg2rad(360)]);
-        
-            % Combine links into SerialLink model
-            self.model = SerialLink([link(1) link(2)], 'name', '2-Link with Y Movement');  
-%}
+            link(1) = Link([0     0       0       0    1]);
+            link(1).qlim = [0 0.2];
+            link(2) = Link([0     0       0       0    1]);
+            link(2).qlim = [0 -0.2];
+
+            %this does not work as it says arrays have incompatible sizes.
+            %issue in robotBaseClass - PlotAndColourRobot
+            %link(1) = Link('prismatic', 'theta', 0, 'a', 0, 'alpha', pi/2, 'qlim', [0, 0.2]);
+            %link(2) = Link('prismatic', 'theta', 0, 'a', 0, 'alpha', -pi/2, 'qlim', [-0.2, 0]);
+            self.model = SerialLink(link,'name',self.name);            
         end    
     end
 end
