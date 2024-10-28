@@ -32,7 +32,7 @@ br = BrushBot;
 waypoints2 = [0,-pi/2,0,0,0;
              0,-109*pi/90,pi*19/90,0,0;
              0,-pi/2,0,0,0;
-             0,-109*pi/90,pi*19/90,0,0;];
+             0,-pi/2,0,0,0];
 
 
 % THIS IS NOT WORKING WELL:
@@ -45,14 +45,19 @@ grip = Gripper;
 %PlaceObject('GripperLink1.ply',[0,-1,0.15]);
 
 q0 = [0,0,0,0,0,0];
-q0_brush = [0,0,0,0,0];
+q0_b = [0,0,0,0,0];
 steps = 25;
 
 % Moving UR3e to bottle
 q1 = waypoints(1,:);
 qMat = jtraj(q0, q1, steps);
+q1b = waypoints2(1,:);
+qMatb= jtraj(q0_b,q1b,steps);
 for j=1:steps
     r.model.animate(qMat(j, :)) % Animating the movement to bottle
+    drawnow;
+    br.model.animate(qMatb(j,:))
+    
     drawnow;
 end
 
@@ -60,9 +65,11 @@ end
 % Moving UR3e to sink
 q2 = waypoints(2,:);
 qMat = jtraj(q1,q2,steps);
+q2b = waypoints2(2,:);
+qMatb= jtraj(q1b,q2b,steps);
 for k=1:steps
     r.model.animate(qMat(k,:));% Animating the movement to sink
-
+    
     lastLinkBody = r.model.fkine(qMat(k,:));
     transformedVertsBody = (lastLinkBody.T * vertsHomogeneousBody')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleBody, 'Vertices', transformedVertsBody(:, 1:3));
@@ -71,14 +78,19 @@ for k=1:steps
     lastLinkCap = lastLinkCap.T * transl(0, 0.18, 0);
     transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
+    drawnow;
+    br.model.animate(qMatb(k,:))
 
     drawnow;
+    
 end
 
 
 % Moving UR3e to tipping position
 q3 = waypoints(3,:);
 qMat = jtraj(q2,q3,steps);
+q3b = waypoints2(3,:);
+qMatb= jtraj(q2b,q3b,steps);
 for l=1:steps
     r.model.animate(qMat(l,:)) % Animating the movement of a tipping position
 
@@ -90,13 +102,18 @@ for l=1:steps
     lastLinkCap = lastLinkCap.T * transl(0, 0.18, 0);
     transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
+    drawnow;
+    br.model.animate(qMatb(l,:))
 
+    
     drawnow;
 end
 
 % Moving UR3e to drying station
 q4 = waypoints(4,:);
 qMat = jtraj(q3,q4,steps);
+q4b = waypoints2(4,:);
+qMatb= jtraj(q3b,q4b,steps);
 for m=1:steps
     r.model.animate(qMat(m,:)) % Animating the movement to dry bottle
 
@@ -108,7 +125,9 @@ for m=1:steps
     lastLinkCap = lastLinkCap.T * transl(0, 0.18, 0);
     transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
-
+    drawnow;    
+    br.model.animate(qMatb(m,:))
+    
     drawnow;
 end
 
