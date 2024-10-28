@@ -21,7 +21,7 @@ classdef Gripper < RobotBaseClass
             end
           
             self.CreateModel();
-            self.model.base = self.model.base.T * transl(0.19,1.40,0.99) * trotz(pi/2);
+            self.model.base = self.model.base.T * transl(0.17,1.6,0.99) * trotz(-pi/2);
             self.model.tool = self.toolTr;
             self.PlotAndColourRobot();
             drawnow
@@ -29,10 +29,18 @@ classdef Gripper < RobotBaseClass
         
         %% CreateModel
         function CreateModel(self)
-            link(1) = Link('d',-0.1,     'a',0.03,      'alpha',0,'offset',pi,'qlim',[deg2rad(-360),deg2rad(360)]);
-            link(2) = Link('d',-0.1,     'a',0.03,     'alpha',0,'offset',-pi,'qlim',[deg2rad(-270),deg2rad(270)]);
+            % top a = y, d = z, 
+            % Link 1: Rotate by 90 degrees to align z-axis with y-axis
+            link(1) = Link('revolute', 'd', 0, 'a', 0.1, 'alpha', 0, 'offset', 0, ...
+                           'qlim', [deg2rad(-360), deg2rad(360)]);
+            
+            % bottom
+            % Link 2: Prismatic joint to move along the new y-axis
+            link(2) = Link('revolute', 'd', 0, 'a', 0.1, 'alpha', pi, 'offset', 0, ...
+                           'qlim', [deg2rad(-360), deg2rad(360)]);
           
-            self.model = SerialLink(link,'name',self.name);            
+            % Combine links into SerialLink model
+            self.model = SerialLink([link(1) link(2)], 'name', '2-Link with Y Movement');            
         end    
     end
 end
