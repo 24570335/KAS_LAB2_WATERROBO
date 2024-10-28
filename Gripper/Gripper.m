@@ -21,7 +21,7 @@ classdef Gripper < RobotBaseClass
             end
           
             self.CreateModel();
-            self.model.base = self.model.base.T * transl(0.19,1.40,0.99) * trotz(pi/2);
+            self.model.base = self.model.base.T;% * transl(0.19,1.40,0.99) * trotz(pi/2);
             self.model.tool = self.toolTr;
             self.PlotAndColourRobot();
             drawnow
@@ -30,8 +30,8 @@ classdef Gripper < RobotBaseClass
         %% CreateModel
         function CreateModel(self)
             link(1) = Link('d',-0.1,     'a',0.03,      'alpha',0,'offset',pi,'qlim',[deg2rad(-360),deg2rad(360)]);
-            link(2) = Link('d',-0.1,     'a',0.03,     'alpha',0,'offset',-pi,'qlim',[deg2rad(-270),deg2rad(270)]);
-          
+            link(2) = Link([0     .5       0       0    1]);
+            link(2).qlim = [0 0.4];
             self.model = SerialLink(link,'name',self.name);            
         end    
     end
