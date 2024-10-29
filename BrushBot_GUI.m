@@ -1,18 +1,34 @@
 function BrushBot_GUI
-    % Initialize BrushBot robot and create GUI
+    % Initialize the GUI and BrushBot model
     close all;
 
     % Create the GUI window
     fig = uifigure('Name', 'BrushBot Control', 'Position', [100 100 700 700]);
 
-    % Initialize BrushBot
-    brushBot = BrushBot();
-    brushBot.model.plot(zeros(1, brushBot.model.n));  % Initial pose
+    % Initialize the BrushBot model and store it in the figure's UserData
+    brushBot = BrushBot();  % Create an instance of BrushBot
+    brushBot.CreateModel(); % Ensure the model is initialized properly
 
-    % Store robot in UserData for access in callbacks
+    % Set the base transformation matrix to place it at the origin (0, 0, 0)
+    brushBot.model.base = transl(0, 0, 0);  % Set base at origin
+
+    % Store the robot object in UserData for later access
     fig.UserData.robot = brushBot;
 
-    % Create Sliders for Joint Control
+    % Set an initial joint configuration (natural position)
+    initialQ = zeros(1, brushBot.model.n);  % Adjust for the number of joints
+
+    % Clear the figure to ensure only one plot is active
+    clf;  % Clear the current figure
+
+    % Plot the robot in the initial configuration with a defined workspace
+    brushBot.model.plot(initialQ, 'workspace', [-1 1 -1 1 -1 1]);
+    
+    % Ensure the view is properly aligned
+    view(3);  % Set to 3D view
+    axis equal;  % Equal scaling along axes
+
+    
     numJoints = brushBot.model.n;  % Number of joints in the robot
     for i = 1:numJoints
         uilabel(fig, 'Position', [50, 630 - (i * 50), 100, 20], ...
@@ -37,12 +53,34 @@ function BrushBot_GUI
     uibutton(fig, 'Position', [300 100 60 40], 'Text', 'Right', ...
         'ButtonPushedFcn', @(~,~)move_robot('right'));
 
-    % Place Gripper Control Buttons next to the D-Pad
-    uibutton(fig, 'Position', [380 150 100 40], 'Text', 'Open Gripper', ...
-        'ButtonPushedFcn', @(~,~)control_gripper('open'));
+    % Cartesian Movement Controls
+    uilabel(fig, 'Position', [550 500 200 20], 'Text', 'Cartesian Controls');
 
-    uibutton(fig, 'Position', [380 100 100 40], 'Text', 'Close Gripper', ...
-        'ButtonPushedFcn', @(~,~)control_gripper('close'));
+    % X-axis Control
+    uibutton(fig, 'Position', [550 450 100 40], 'Text', '+X', ...
+        'ButtonPushedFcn', @(~,~)move_cartesian([0.05, 0, 0]));
+    uibutton(fig, 'Position', [660 450 100 40], 'Text', '-X', ...
+        'ButtonPushedFcn', @(~,~)move_cartesian([-0.05, 0, 0]));
+
+    % Y-axis Control
+    uibutton(fig, 'Position', [550 400 100 40], 'Text', '+Y', ...
+        'ButtonPushedFcn', @(~,~)move_cartesian([0, 0.05, 0]));
+    uibutton(fig, 'Position', [660 400 100 40], 'Text', '-Y', ...
+        'ButtonPushedFcn', @(~,~)move_cartesian([0, -0.05, 0]));
+
+    % Z-axis Control
+    uibutton(fig, 'Position', [550 350 100 40], 'Text', '+Z', ...
+        'ButtonPushedFcn', @(~,~)move_cartesian([0, 0, 0.05]));
+    uibutton(fig, 'Position', [660 350 100 40], 'Text', '-Z', ...
+        'ButtonPushedFcn', @(~,~)move_cartesian([0, 0, -0.05]));
+
+    % Helper Functions
+
+    function activate_teach_mode()
+        % Activate the teach mode using Peter Corke's Robotics Toolbox
+        robot = fig.UserData.robot;
+        robot.model.teach();  % Launch the teach GUI
+    end
 
     function update_joint(jointIndex, jointValue)
         % Callback for updating joint values using sliders
@@ -51,7 +89,7 @@ function BrushBot_GUI
         % Get the current joint positions
         q = robot.model.getpos();  
 
-        % Update the specific joint value
+        % Update the specified joint value
         q(jointIndex) = jointValue;
 
         % Animate the robot to the new position
@@ -60,7 +98,7 @@ function BrushBot_GUI
     end
 
     function move_robot(direction)
-        % Callback for directional movement buttons
+        % Callback for D-pad buttons to move the robot
         robot = fig.UserData.robot;
         q = robot.model.getpos();  % Get current joint configuration
 
@@ -74,86 +112,62 @@ function BrushBot_GUI
             case 'down'
                 q(2) = q(2) - stepSize;  % Move joint 2 downwards
             case 'left'
-                q(1) = q(1) + stepSize;  % Rotate base left
+                q(1) = q(1) + stepSize;  % Rotate base joint left
             case 'right'
-                q(1) = q(1) - stepSize;  % Rotate base right
+                q(1) = q(1) - stepSize;  % Rotate base joint right
         end
 
         % Animate the robot to the new position
         robot.model.animate(q);
-        drawnow;
+        drawnow;  % Refresh the plot
     end
 
-    function control_gripper(action)
-        % Callback for gripper control buttons
-        % Define joint configurations for open and closed states
-        qOpen = [0.5];  % Example open state value (adjust as needed)
-        qClose = [0];   % Example closed state value (adjust as needed)
+function move_cartesian(delta)
+    % Callback for Cartesian movement buttons
+    robot = fig.UserData.robot;
 
-        % Execute the appropriate action
-        switch action
-            case 'open'
-                brushBot.model.animate(qOpen);  % Animate to open state
-            case 'close'
-                brushBot.model.animate(qClose);  % Animate to closed state
-        end
+    % Get the current joint configuration
+    currentQ = robot.model.getpos();
 
-        drawnow;  % Refresh the GUI
+    % Debugging: Print the current joint configuration
+    disp('Current joint configuration:');
+    disp(currentQ);
+
+    % Calculate the end-effector pose using fkine
+    try
+        currentPose = robot.model.fkine(currentQ);
+    catch ME
+        disp('Error calculating fkine:');
+        disp(ME.message);
+        return;  % Exit if fkine fails
     end
 
+    % Verify that the returned pose is a 4x4 matrix
+    if ~isequal(size(currentPose), [4, 4])
+        error('fkine did not return a valid 4x4 transformation matrix.');
+    end
+
+    % Extract the translation component
+    T = currentPose(1:3, 4);
+
+    % Apply the delta translation
+    newT = T + delta(:);
+
+    % Update the transformation matrix with the new translation
+    newPose = currentPose;
+    newPose(1:3, 4) = newT;
+
+    % Calculate the joint angles for the new pose using inverse kinematics
+    newQ = robot.model.ikcon(newPose, currentQ);
+
+    % Animate the robot to the new configuration
+    robot.model.animate(newQ);
+    drawnow;  % Refresh the plot
+end
 
 
-    % function GripperControl
-    %     % Initialize Gripper object
-    %     gripper = Gripper(transl(0, 0, 0));  % Initialize at origin
-    % 
-    %     % Plot the gripper in its initial position
-    %     gripper.model.plot([0]);  % Assuming it has one joint for control
-    % 
-    %     % Create a simple GUI for controlling the gripper
-    %     fig = uifigure('Name', 'Gripper Control', 'Position', [100 100 300 200]);
-    % 
-    %     % Create Open Gripper button
-    %     uibutton(fig, 'Position', [50 120 100 40], 'Text', 'Open Gripper', ...
-    %         'ButtonPushedFcn', @(~,~)control_gripper(gripper, 'open'));
-    % 
-    %     % Create Close Gripper button
-    %     uibutton(fig, 'Position', [150 120 100 40], 'Text', 'Close Gripper', ...
-    %         'ButtonPushedFcn', @(~,~)control_gripper(gripper, 'close'));
-    % 
-    %     % Display the gripper's joint state label
-    %     jointStateLabel = uilabel(fig, 'Position', [50 70 200 20], ...
-    %         'Text', 'Gripper State: Closed');
-    % 
-    %     % Store the label's handle to update it dynamically
-    %     fig.UserData.jointStateLabel = jointStateLabel;
-    % end
-    % 
-    % function control_gripper(gripper, action)
-    %     % Control function to open/close the gripper
-    %     % Define joint configurations for open and closed states
-    %     qOpen = [0.5];  % Example open state value (adjust as needed)
-    %     qClose = [0];   % Example closed state value (adjust as needed)
-    % 
-    %     % Execute the appropriate action
-    %     switch action
-    %         case 'open'
-    %             gripper.model.animate(qOpen);  % Animate to open state
-    %             update_label('Open');  % Update GUI label
-    % 
-    %         case 'close'
-    %             gripper.model.animate(qClose);  % Animate to closed state
-    %             update_label('Closed');  % Update GUI label
-    %     end
-    % 
-    %     drawnow;  % Refresh the GUI
-    % end
-    % 
-    % function update_label(state)
-    %     % Update the joint state label in the GUI
-    %     fig = gcf;  % Get current figure handle
-    %     label = fig.UserData.jointStateLabel;  % Access the label handle
-    %     label.Text = ['Gripper State: ', state];  % Update label text
-    % end
+
+
+
 
 end
