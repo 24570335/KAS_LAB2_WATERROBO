@@ -1,12 +1,12 @@
-classdef Gripper < RobotBaseClass
+classdef rawgripper < RobotBaseClass
 
     properties(Access = public)   
-        plyFileNameStem = 'Gripper'
+        plyFileNameStem = 'rawgripper'
     end
     
     methods
         %% Constructor
-        function self = Gripper(baseTr)            
+        function self = rawgripper(baseTr)            
             if nargin < 3
                 if nargin == 2
                     error('If you set useTool you must pass in the toolFilename as well');
@@ -21,8 +21,8 @@ classdef Gripper < RobotBaseClass
             end
           
             self.CreateModel();
-            % self.model.base = self.model.base.T;% * transl(0.19,1.40,0.99) * trotz(pi/2);
-            self.model.base = self.model.base.T * baseTr * transl(0.17,1.6,0.99) * trotz(-pi/2);
+            self.model.base = self.model.base.T;% * transl(0.19,1.40,0.99) * trotz(pi/2);
+            % self.model.base = self.model.base.T * baseTr * transl(0.17,1.6,0.99) * trotz(-pi/2);
             self.model.tool = self.toolTr;
             self.PlotAndColourRobot();
             drawnow
