@@ -86,40 +86,38 @@ for i = 1:5
 end
 
 %% Creating mesh vertices to check collisions with
-% Create a rectangular mesh
-[Y, Z] = meshgrid(-0.3:0.05:0.3, -0.2:0.05:0.2); % Different ranges for Y and Z for a rectangle
-sizeMat = size(Y);
-X = repmat(0.2, sizeMat(1), sizeMat(2)); % X plane remains constant
+% Create a rectangular wall mesh
+[Xw, Zw] = meshgrid(-4:0.05:4, -5:0.05:5); % Different ranges for X and Z for a rectangle
+sizeMat = size(Xw);
+Yw = repmat(2, sizeMat(1), sizeMat(2)); % Y plane remains constant
 % Plot one side of the rectangle as a surface
-oneSideOfRectangle_h = surf(X, Y, Z);
+surf(Xw, Yw, Zw,'FaceAlpha', 0.3, 'EdgeColor', 'none');
 % Combine one surface as a point cloud
-rectPoints = [X(:), Y(:), Z(:)];
-
+rectPointsWall = [Xw(:), Yw(:), Zw(:)];
 % Plot the rectangular prism's point cloud         
-%rectAtOrigin_h = plot3(rectPoints(:,1), rectPoints(:,2), rectPoints(:,3), 'r.');
+rect_wall = plot3(rectPointsWall(:,1), rectPointsWall(:,2), rectPointsWall(:,3), 'b.');
 
-rectPointsNew = rectPoints + repmat([0,1.5,1], size(rectPoints,1), 1);
-rect_h = plot3(rectPointsNew(:,1), rectPointsNew(:,2), rectPointsNew(:,3), 'b.');
-% [Y,Z] = meshgrid(-0.2:0.05:0.2,-0.2:0.05:0.2);
-% sizeMat = size(Y);
-% X = repmat(0.2,sizeMat(1),sizeMat(2));
-% oneSideOfCube_h = surf(X,Y,Z);
-% 
-% % Combine one surface as a point cloud
-% cubePoints = [X(:),Y(:),Z(:)];
-% 
-% % Make a cube by rotating the single side by 0,90,180,270, and around y to make the top and bottom faces
-% cubePoints = [ cubePoints ...
-%              ; cubePoints * rotz(pi/2)...
-%              ; cubePoints * rotz(pi) ...
-%              ; cubePoints * rotz(3*pi/2) ...
-%              ; cubePoints * roty(pi/2) ...
-%              ; cubePoints * roty(-pi/2)];         
-% 
-% % Plot the cube's point cloud         
-% cubeAtOrigin_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'r.');
-% cubePointsNew = cubePoints + repmat([0,1.5,1],size(cubePoints,1),1);
-% cube_h = plot3(cubePointsNew(:,1),cubePointsNew(:,2),cubePointsNew(:,3),'b.');
+% Create a rectangular table mesh
+[Xt, Yt] = meshgrid(-2:0.05:0, 0.5:0.05:2); % Different ranges for X and Y for a rectangle
+sizeMat = size(Xt);
+Zt = repmat(0.83, sizeMat(1), sizeMat(2)); % Z plane remains constant
+% Plot one side of the rectangle as a surface
+surf(Xt, Yt, Zt,'FaceAlpha', 0.3, 'EdgeColor', 'none');
+% Combine one surface as a point cloud
+rectPointsTable = [Xt(:), Yt(:), Zt(:)];
+% Plot the rectangular prism's point cloud         
+rect_table = plot3(rectPointsTable(:,1), rectPointsTable(:,2), rectPointsTable(:,3), 'g.');
+
+% Create a rectangular alarm mesh
+[Xa, Za] = meshgrid(-1.6:0.05:-0.4, 1.9:0.05:2.4); % Different ranges for X and Z for a rectangle
+sizeMat = size(Xa);
+Ya = repmat(1.85, sizeMat(1), sizeMat(2)); % Y plane remains constant
+% Plot one side of the rectangle as a surface
+surf(Xa, Ya, Za,'FaceAlpha', 0.3, 'EdgeColor', 'none');
+% Combine one surface as a point cloud
+rectPointsAlarm = [Xa(:), Ya(:), Za(:)];
+% Plot the rectangular prism's point cloud         
+rect_alarm = plot3(rectPointsAlarm(:,1), rectPointsAlarm(:,2), rectPointsAlarm(:,3), 'r.');
 
 %%
 
@@ -155,9 +153,13 @@ for j=1:steps
         try delete(ellipsoidHandles(i)); end;
     end
 
-    % Update each ellipsoid position to match current link position
+    % Update each ellipsoid position to match current UR3 link position
     for i = 1:5
         radii = radiiList(i, :);
+
+        % Extract the center point from the transformation matrix
+        centerPoint = tr(1:3, 4, i+1)'; % Extract translation components as centerPoint
+        
         [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
         
         % Apply updated transformation to the ellipsoid
@@ -165,10 +167,32 @@ for j=1:steps
         X_transformed = reshape(transformedPoints(1, :), size(X));
         Y_transformed = reshape(transformedPoints(2, :), size(Y));
         Z_transformed = reshape(transformedPoints(3, :), size(Z));
+
         
         % Update the plot (refresh each ellipsoid to its new position)
         ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+
+        % Using GetAlgebraicDist find how many points are inside each ellipsoid
+        % For Wall Mesh
+        rectPointsWall1 = [inv(tr(:,:,i+1)) * [rectPointsWall, ones(size(rectPointsWall, 1), 1)]']';
+        rectPointsWall2 = rectPointsWall1(:,1:3);
+        algebraicDist = GetAlgebraicDist(rectPointsWall, centerPoint, radii);
+        pointsInside = find(algebraicDist < 1);
+        disp(['From Wall there are ', num2str(size(pointsInside,1)), ' points inside the ', num2str(i), 'th ellipsoid']);
+        % For Table Mesh
+        rectPointsTable = [inv(tr(:,:,i+1)) * [rectPointsTable, ones(size(rectPointsTable, 1), 1)]']';
+        rectPointsTable = rectPointsTable(:,1:3);
+        algebraicDist = GetAlgebraicDist(rectPointsTable, centerPoint, radii);
+        pointsInside = find(algebraicDist < 1);
+        disp(['From Table there are ', num2str(size(pointsInside,1)), ' points inside the ', num2str(i), 'th ellipsoid']);
+        % For Alarm Mesh
+        rectPointsAlarm = [inv(tr(:,:,i+1)) * [rectPointsAlarm, ones(size(rectPointsAlarm, 1), 1)]']';
+        rectPointsAlarm = rectPointsAlarm(:,1:3);
+        algebraicDist = GetAlgebraicDist(rectPointsAlarm, centerPoint, radii);
+        pointsInside = find(algebraicDist < 1);
+        disp(['From Alarm there are ', num2str(size(pointsInside,1)), ' points inside the ', num2str(i), 'th ellipsoid']);
     end
+
     
     drawnow()
 end
@@ -212,7 +236,6 @@ for k=1:steps
 
     % Update each ellipsoid position to match current link position
     for i = 1:5
-        try delete(currentEllipsoid); end;
 
         radii = radiiList(i, :);
         [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
@@ -266,8 +289,6 @@ for l=1:steps
 
     % Update each ellipsoid position to match current link position
     for i = 1:5
-        try delete(currentEllipsoid); end;
-
         radii = radiiList(i, :);
         [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
         
@@ -318,8 +339,6 @@ for m=1:steps
 
     % Update each ellipsoid position to match current link position
     for i = 1:5
-        try delete(currentEllipsoid); end;
-
         radii = radiiList(i, :);
         [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
         
