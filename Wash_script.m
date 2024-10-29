@@ -101,12 +101,15 @@ rectPointsAlarm = [Xa(:), Ya(:), Za(:)];
 rect_alarm = plot3(rectPointsAlarm(:,1), rectPointsAlarm(:,2), rectPointsAlarm(:,3), 'r.');
 
 %% Final intialisations for trajectory
-
 q0 = [0,0,0,0,0,0];
 q0_b = [0,0,0,0,0];
 steps = 25;
 qmatopen = jtraj(grip.model.getpos(), qopen, steps);
 qmatclose = jtraj(qopen,qclose,steps);
+% Collision detection boolean
+collisionDetectedB = false;
+collisionDetectedBr = false;
+
 
 %% Moving UR3e to bottle
 q1 = waypointsUR3(1,:);
@@ -142,13 +145,22 @@ for j=1:steps
         ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
         % Using GetAlgebraicDist find how many points are inside each ellipsoid
         % Use `collisionCheck` for each object mesh
-        collisionCheck(rectPointsWall, centerPoint, radii, 'Wall', i, tr);
-        collisionCheck(rectPointsTable, centerPoint, radii, 'Table', i, tr);
-        collisionCheck(rectPointsAlarm, centerPoint, radii, 'Alarm', i, tr); 
+        pointsInsideCountWall = collisionCheck(rectPointsWall, centerPoint, radii, 'Wall', i, tr);
+        pointsInsideCountTable = collisionCheck(rectPointsTable, centerPoint, radii, 'Table', i, tr);
+        pointsInsideCountAlarm = collisionCheck(rectPointsAlarm, centerPoint, radii, 'Alarm', i, tr);
+        
+        % Check thresholds for each object
+        if pointsInsideCountWall > 1 || pointsInsideCountTable > 6 || pointsInsideCountAlarm > 1
+            collisionDetectedB = true;
+            disp('Collision detected.');
+            return; % Exit the inner loop
+        end
     end
+
 
     % Recalculate transformations for each link in BrushBot for each step
     trBr(:,:,1) = br.model.base;
+    totalPointsInsideBr = 0;  % Initialise the counter for each step
     for i = 1:4
         % Recalculate transformations for each link in UR3 for each step
         trBr(:,:,i+1) = trBr(:,:,i) * trotz(qMatb(j, i)) * transl(0, 0, LBr(i).d) * transl(LBr(i).a/1.3, 0, 0) * trotx(LBr(i).alpha);
@@ -167,9 +179,16 @@ for j=1:steps
         ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
         % Using GetAlgebraicDist find how many points are inside each ellipsoid
         % Use `collisionCheck` for each object mesh
-        collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
-        collisionCheck(rectPointsTable, centerPoint, radiiBr, 'Table', i, trBr);
-        collisionCheck(rectPointsAlarm, centerPoint, radiiBr, 'Alarm', i, trBr); 
+        pointsInsideCountWall = collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
+        pointsInsideCountTable = collisionCheck(rectPointsTable, centerPoint, radiiBr, 'Table', i, trBr);
+        pointsInsideCountAlarm = collisionCheck(rectPointsAlarm, centerPoint, radiiBr, 'Alarm', i, trBr);
+        
+        % Check thresholds for each object
+        if pointsInsideCountWall > 1 || pointsInsideCountTable > 6 || pointsInsideCountAlarm > 1
+            collisionDetectedBr = true;
+            disp('Collision detected.');
+            return; % Exit the inner loop
+        end
     end
     drawnow()
 end
@@ -220,9 +239,16 @@ for k=1:steps
         ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
         % Using GetAlgebraicDist find how many points are inside each ellipsoid
         % Use `collisionCheck` for each object mesh
-        collisionCheck(rectPointsWall, centerPoint, radii, 'Wall', i, tr);
-        collisionCheck(rectPointsTable, centerPoint, radii, 'Table', i, tr);
-        collisionCheck(rectPointsAlarm, centerPoint, radii, 'Alarm', i, tr); 
+        pointsInsideCountWall = collisionCheck(rectPointsWall, centerPoint, radii, 'Wall', i, tr);
+        pointsInsideCountTable = collisionCheck(rectPointsTable, centerPoint, radii, 'Table', i, tr);
+        pointsInsideCountAlarm = collisionCheck(rectPointsAlarm, centerPoint, radii, 'Alarm', i, tr);
+        
+        % Check thresholds for each object
+        if pointsInsideCountWall > 1 || pointsInsideCountTable > 6 || pointsInsideCountAlarm > 1
+            collisionDetectedB = true;
+            disp('Collision detected.');
+            return; % Exit the inner loop
+        end
     end
 
     % Recalculate transformations for each link in BrushBot for each step
@@ -245,9 +271,16 @@ for k=1:steps
         ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
         % Using GetAlgebraicDist find how many points are inside each ellipsoid
         % Use `collisionCheck` for each object mesh
-        collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
-        collisionCheck(rectPointsTable, centerPoint, radiiBr, 'Table', i, trBr);
-        collisionCheck(rectPointsAlarm, centerPoint, radiiBr, 'Alarm', i, trBr); 
+        pointsInsideCountWall = collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
+        pointsInsideCountTable = collisionCheck(rectPointsTable, centerPoint, radiiBr, 'Table', i, trBr);
+        pointsInsideCountAlarm = collisionCheck(rectPointsAlarm, centerPoint, radiiBr, 'Alarm', i, trBr);
+        
+        % Check thresholds for each object
+        if pointsInsideCountWall > 1 || pointsInsideCountTable > 6 || pointsInsideCountAlarm > 1
+            collisionDetectedBr = true;
+            disp('Collision detected.');
+            return; % Exit the inner loop
+        end
     end
 
     drawnow()
@@ -278,6 +311,38 @@ for o = 1:longsteps
     transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
     br.model.animate(qMatb(o,:))
+
+    % Recalculate transformations for each link in BrushBot for each step
+    trBr(:,:,1) = br.model.base;
+    for i = 1:4
+        % Recalculate transformations for each link in UR3 for each step
+        trBr(:,:,i+1) = trBr(:,:,i) * trotz(qMatb(o, i)) * transl(0, 0, LBr(i).d) * transl(LBr(i).a/1.3, 0, 0) * trotx(LBr(i).alpha);
+        % Delete the previous ellipsoids if they exist
+        try delete(ellipsoidHandlesBr(i)); end;
+        radiiBr = radiiListBr(i, :);
+        % Extract the center point from the transformation matrix
+        centerPoint = trBr(1:3, 4, i+1)'; % Extract translation components as centerPoint
+        [X, Y, Z] = ellipsoid(-0.01, 0, 0, radiiBr(1), radiiBr(2), radiiBr(3));
+        % Apply updated transformation to the ellipsoid
+        transformedPoints = trBr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
+        X_transformed = reshape(transformedPoints(1, :), size(X));
+        Y_transformed = reshape(transformedPoints(2, :), size(Y));
+        Z_transformed = reshape(transformedPoints(3, :), size(Z));
+        % Update the plot (refresh each ellipsoid to its new position)
+        ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        % Using GetAlgebraicDist find how many points are inside each ellipsoid
+        % Use `collisionCheck` for each object mesh
+        pointsInsideCountWall = collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
+        pointsInsideCountTable = collisionCheck(rectPointsTable, centerPoint, radiiBr, 'Table', i, trBr);
+        pointsInsideCountAlarm = collisionCheck(rectPointsAlarm, centerPoint, radiiBr, 'Alarm', i, trBr);
+        
+        % Check thresholds for each object
+        if pointsInsideCountWall > 1 || pointsInsideCountTable > 6 || pointsInsideCountAlarm > 1
+            collisionDetectedBr = true;
+            disp('Collision detected.');
+            return; % Exit the inner loop
+        end
+    end
     drawnow
 end
 
@@ -295,6 +360,38 @@ for s = 1:longsteps
     set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
 
     br.model.animate(qMatb(s,:))
+
+    % Recalculate transformations for each link in BrushBot for each step
+    trBr(:,:,1) = br.model.base;
+    for i = 1:4
+        % Recalculate transformations for each link in UR3 for each step
+        trBr(:,:,i+1) = trBr(:,:,i) * trotz(qMatb(s, i)) * transl(0, 0, LBr(i).d) * transl(LBr(i).a/1.3, 0, 0) * trotx(LBr(i).alpha);
+        % Delete the previous ellipsoids if they exist
+        try delete(ellipsoidHandlesBr(i)); end;
+        radiiBr = radiiListBr(i, :);
+        % Extract the center point from the transformation matrix
+        centerPoint = trBr(1:3, 4, i+1)'; % Extract translation components as centerPoint
+        [X, Y, Z] = ellipsoid(-0.01, 0, 0, radiiBr(1), radiiBr(2), radiiBr(3));
+        % Apply updated transformation to the ellipsoid
+        transformedPoints = trBr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
+        X_transformed = reshape(transformedPoints(1, :), size(X));
+        Y_transformed = reshape(transformedPoints(2, :), size(Y));
+        Z_transformed = reshape(transformedPoints(3, :), size(Z));
+        % Update the plot (refresh each ellipsoid to its new position)
+        ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        % Using GetAlgebraicDist find how many points are inside each ellipsoid
+        % Use `collisionCheck` for each object mesh
+        pointsInsideCountWall = collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
+        pointsInsideCountTable = collisionCheck(rectPointsTable, centerPoint, radiiBr, 'Table', i, trBr);
+        pointsInsideCountAlarm = collisionCheck(rectPointsAlarm, centerPoint, radiiBr, 'Alarm', i, trBr);
+        
+        % Check thresholds for each object
+        if pointsInsideCountWall > 1 || pointsInsideCountTable > 6 || pointsInsideCountAlarm > 1
+            collisionDetectedBr = true;
+            disp('Collision detected.');
+            return; % Exit the inner loop
+        end
+    end
     drawnow
 end
 
@@ -307,6 +404,38 @@ for t = 1:longsteps
     grip.model.base = br.model.fkine(qMatb(t,:)); %waypoint to wash
     grip.model.animate([4*pi/3,0,0]);
     br.model.animate(qMatb(t,:))
+
+    % Recalculate transformations for each link in BrushBot for each step
+    trBr(:,:,1) = br.model.base;
+    for i = 1:4
+        % Recalculate transformations for each link in UR3 for each step
+        trBr(:,:,i+1) = trBr(:,:,i) * trotz(qMatb(t, i)) * transl(0, 0, LBr(i).d) * transl(LBr(i).a/1.3, 0, 0) * trotx(LBr(i).alpha);
+        % Delete the previous ellipsoids if they exist
+        try delete(ellipsoidHandlesBr(i)); end;
+        radiiBr = radiiListBr(i, :);
+        % Extract the center point from the transformation matrix
+        centerPoint = trBr(1:3, 4, i+1)'; % Extract translation components as centerPoint
+        [X, Y, Z] = ellipsoid(-0.01, 0, 0, radiiBr(1), radiiBr(2), radiiBr(3));
+        % Apply updated transformation to the ellipsoid
+        transformedPoints = trBr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
+        X_transformed = reshape(transformedPoints(1, :), size(X));
+        Y_transformed = reshape(transformedPoints(2, :), size(Y));
+        Z_transformed = reshape(transformedPoints(3, :), size(Z));
+        % Update the plot (refresh each ellipsoid to its new position)
+        ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        % Using GetAlgebraicDist find how many points are inside each ellipsoid
+        % Use `collisionCheck` for each object mesh
+        pointsInsideCountWall = collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
+        pointsInsideCountTable = collisionCheck(rectPointsTable, centerPoint, radiiBr, 'Table', i, trBr);
+        pointsInsideCountAlarm = collisionCheck(rectPointsAlarm, centerPoint, radiiBr, 'Alarm', i, trBr);
+        
+        % Check thresholds for each object
+        if pointsInsideCountWall > 1 || pointsInsideCountTable > 6 || pointsInsideCountAlarm > 1
+            collisionDetectedBr = true;
+            disp('Collision detected.');
+            return; % Exit the inner loop
+        end
+    end
     drawnow
 end
 
@@ -320,6 +449,37 @@ for p = 1:longsteps %return to wash
     grip.model.base = br.model.fkine(qMatb(p,:)); 
     grip.model.animate([4*pi/3,0,0]);
     br.model.animate(qMatb(p,:))
+    % Recalculate transformations for each link in BrushBot for each step
+    trBr(:,:,1) = br.model.base;
+    for i = 1:4
+        % Recalculate transformations for each link in UR3 for each step
+        trBr(:,:,i+1) = trBr(:,:,i) * trotz(qMatb(p, i)) * transl(0, 0, LBr(i).d) * transl(LBr(i).a/1.3, 0, 0) * trotx(LBr(i).alpha);
+        % Delete the previous ellipsoids if they exist
+        try delete(ellipsoidHandlesBr(i)); end;
+        radiiBr = radiiListBr(i, :);
+        % Extract the center point from the transformation matrix
+        centerPoint = trBr(1:3, 4, i+1)'; % Extract translation components as centerPoint
+        [X, Y, Z] = ellipsoid(-0.01, 0, 0, radiiBr(1), radiiBr(2), radiiBr(3));
+        % Apply updated transformation to the ellipsoid
+        transformedPoints = trBr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
+        X_transformed = reshape(transformedPoints(1, :), size(X));
+        Y_transformed = reshape(transformedPoints(2, :), size(Y));
+        Z_transformed = reshape(transformedPoints(3, :), size(Z));
+        % Update the plot (refresh each ellipsoid to its new position)
+        ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        % Using GetAlgebraicDist find how many points are inside each ellipsoid
+        % Use `collisionCheck` for each object mesh
+        pointsInsideCountWall = collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
+        pointsInsideCountTable = collisionCheck(rectPointsTable, centerPoint, radiiBr, 'Table', i, trBr);
+        pointsInsideCountAlarm = collisionCheck(rectPointsAlarm, centerPoint, radiiBr, 'Alarm', i, trBr);
+        
+        % Check thresholds for each object
+        if pointsInsideCountWall > 1 || pointsInsideCountTable > 6 || pointsInsideCountAlarm > 1
+            collisionDetectedBr = true;
+            disp('Collision detected.');
+            return; % Exit the inner loop
+        end
+    end
     drawnow
 end
 
@@ -376,9 +536,16 @@ for l = 1:steps
         ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
         % Using GetAlgebraicDist find how many points are inside each ellipsoid
         % Use `collisionCheck` for each object mesh
-        collisionCheck(rectPointsWall, centerPoint, radii, 'Wall', i, tr);
-        collisionCheck(rectPointsTable, centerPoint, radii, 'Table', i, tr);
-        collisionCheck(rectPointsAlarm, centerPoint, radii, 'Alarm', i, tr); 
+        pointsInsideCountWall = collisionCheck(rectPointsWall, centerPoint, radii, 'Wall', i, tr);
+        pointsInsideCountTable = collisionCheck(rectPointsTable, centerPoint, radii, 'Table', i, tr);
+        pointsInsideCountAlarm = collisionCheck(rectPointsAlarm, centerPoint, radii, 'Alarm', i, tr);
+        
+        % Check thresholds for each object
+        if pointsInsideCountWall > 1 || pointsInsideCountTable > 6 || pointsInsideCountAlarm > 1
+            collisionDetectedB = true;
+            disp('Collision detected.');
+            return; % Exit the inner loop
+        end
     end
 
     % Recalculate transformations for each link in BrushBot for each step
@@ -401,9 +568,16 @@ for l = 1:steps
         ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
         % Using GetAlgebraicDist find how many points are inside each ellipsoid
         % Use `collisionCheck` for each object mesh
-        collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
-        collisionCheck(rectPointsTable, centerPoint, radiiBr, 'Table', i, trBr);
-        collisionCheck(rectPointsAlarm, centerPoint, radiiBr, 'Alarm', i, trBr); 
+        pointsInsideCountWall = collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
+        pointsInsideCountTable = collisionCheck(rectPointsTable, centerPoint, radiiBr, 'Table', i, trBr);
+        pointsInsideCountAlarm = collisionCheck(rectPointsAlarm, centerPoint, radiiBr, 'Alarm', i, trBr);
+        
+        % Check thresholds for each object
+        if pointsInsideCountWall > 1 || pointsInsideCountTable > 6 || pointsInsideCountAlarm > 1
+            collisionDetectedBr = true;
+            disp('Collision detected.');
+            return; % Exit the inner loop
+        end
     end
 
 
@@ -451,9 +625,16 @@ for m=1:steps
         ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
         % Using GetAlgebraicDist find how many points are inside each ellipsoid
         % Use `collisionCheck` for each object mesh
-        collisionCheck(rectPointsWall, centerPoint, radii, 'Wall', i, tr);
-        collisionCheck(rectPointsTable, centerPoint, radii, 'Table', i, tr);
-        collisionCheck(rectPointsAlarm, centerPoint, radii, 'Alarm', i, tr); 
+        pointsInsideCountWall = collisionCheck(rectPointsWall, centerPoint, radii, 'Wall', i, tr);
+        pointsInsideCountTable = collisionCheck(rectPointsTable, centerPoint, radii, 'Table', i, tr);
+        pointsInsideCountAlarm = collisionCheck(rectPointsAlarm, centerPoint, radii, 'Alarm', i, tr);
+        
+        % Check thresholds for each object
+        if pointsInsideCountWall > 1 || pointsInsideCountTable > 6 || pointsInsideCountAlarm > 1
+            collisionDetectedB = true;
+            disp('Collision detected.');
+            return; % Exit the inner loop
+        end
     end
 
     % Recalculate transformations for each link in BrushBot for each step
@@ -476,9 +657,16 @@ for m=1:steps
         ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
         % Using GetAlgebraicDist find how many points are inside each ellipsoid
         % Use `collisionCheck` for each object mesh
-        collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
-        collisionCheck(rectPointsTable, centerPoint, radiiBr, 'Table', i, trBr);
-        collisionCheck(rectPointsAlarm, centerPoint, radiiBr, 'Alarm', i, trBr); 
+        pointsInsideCountWall = collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
+        pointsInsideCountTable = collisionCheck(rectPointsTable, centerPoint, radiiBr, 'Table', i, trBr);
+        pointsInsideCountAlarm = collisionCheck(rectPointsAlarm, centerPoint, radiiBr, 'Alarm', i, trBr);
+        
+        % Check thresholds for each object
+        if pointsInsideCountWall > 1 || pointsInsideCountTable > 6 || pointsInsideCountAlarm > 1
+            collisionDetectedBr = true;
+            disp('Collision detected.');
+            return; % Exit the inner loop
+        end 
     end
     drawnow()
 end
@@ -552,11 +740,12 @@ function points = createMesh(xRange, yRange, zRange, color)
 end
 
 % Function for collision checking and reporting
-function collisionCheck(meshPoints, centerPoint, radii, objectName, linkIndex, tr)
+function pointsInsideCount = collisionCheck(meshPoints, centerPoint, radii, objectName, linkIndex, tr)
     transformedPoints1 = [inv(tr(:,:,linkIndex+1)) * [meshPoints, ones(size(meshPoints, 1), 1)]']';
     transformedPoints = transformedPoints1(:,1:3);
     algebraicDist = GetAlgebraicDist(transformedPoints, [0,0,0], radii);
     pointsInside = find(algebraicDist < 1);
+    pointsInsideCount = numel(pointsInside);
     disp(['From ', objectName, ' there are ', num2str(numel(pointsInside)), ' points inside the ', num2str(linkIndex), 'th ellipsoid']);
 end
 
