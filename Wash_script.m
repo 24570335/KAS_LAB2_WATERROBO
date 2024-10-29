@@ -273,12 +273,17 @@ for n = 1:longsteps
 end
 
 qMatb= jtraj(q2b,q3b,longsteps);
+
 for o = 1:longsteps
     r.model.animate(q2); % stay
     rawgrip.model.base = r.model.fkine(q2);
     rawgrip.model.animate([0,0,0]);
     grip.model.base = br.model.fkine(qMatb(o,:)); %put cap away
     grip.model.animate([4*pi/3,0,0]);
+    lastLinkCap = br.model.fkine(qMatb(o,:));
+    lastLinkCap = lastLinkCap.T * transl(0,0,0.1);
+    transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
+    set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
     br.model.animate(qMatb(o,:))
     drawnow
 end
@@ -291,6 +296,11 @@ for s = 1:longsteps
     rawgrip.model.animate([0,0,0]);
     grip.model.base = br.model.fkine(qMatb(s,:)); %put cap away2
     grip.model.animate([4*pi/3,0,0]);
+    lastLinkCap = br.model.fkine(qMatb(s,:));
+    lastLinkCap = lastLinkCap.T * transl(0,0,0.1);
+    transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
+    set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
+
     br.model.animate(qMatb(s,:))
     drawnow
 end
@@ -338,23 +348,23 @@ qMat = jtraj(q2,q3,steps);
 q3b = waypoints2(3,:);
 qMatb= jtraj(q2b,q3b,steps);
 
-for z = 1:steps
+for l = 1:steps
 
-    r.model.animate(qMat(z,:)); % Animating the movement of a tipping position
-    rawgrip.model.base = r.model.fkine(qMat(z,:));
+    r.model.animate(qMat(l,:)); % Animating the movement of a tipping position
+    rawgrip.model.base = r.model.fkine(qMat(l,:));
     rawgrip.model.animate([0,0,0]);
-    lastLinkBody = r.model.fkine(qMat(z,:));
+    lastLinkBody = r.model.fkine(qMat(l,:));
     transformedVertsBody = (lastLinkBody.T * vertsHomogeneousBody')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleBody, 'Vertices', transformedVertsBody(:, 1:3));
 
-    lastLinkCap = r.model.fkine(qMat(z,:));
-    lastLinkCap = lastLinkCap.T * transl(0, 0.18, 0);
-    transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
-    set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
+    % lastLinkCap = r.model.fkine(qMat(l,:));
+    % lastLinkCap = lastLinkCap.T * transl(0, 0.18, 0);
+    % transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
+    % set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
     drawnow;
-    grip.model.base = br.model.fkine(qMatb(z,:));
+    grip.model.base = br.model.fkine(qMatb(l,:));
     grip.model.animate([0,0,0]);
-    br.model.animate(qMatb(z,:))
+    br.model.animate(qMatb(l,:))
 
     % Recalculate transformations for each link in UR3 for each step
     tr(:,:,1) = r.model.base;
@@ -399,10 +409,10 @@ for m=1:steps
     transformedVertsBody = (lastLinkBody.T * vertsHomogeneousBody')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleBody, 'Vertices', transformedVertsBody(:, 1:3));
 
-    lastLinkCap = r.model.fkine(qMat(m,:));
-    lastLinkCap = lastLinkCap.T * transl(0, 0.18, 0);
-    transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
-    set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
+    % lastLinkCap = r.model.fkine(qMat(m,:));
+    % lastLinkCap = lastLinkCap.T * transl(0, 0.18, 0);
+    % transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
+    % set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
     grip.model.base = br.model.fkine(qMatb(m,:));
     grip.model.animate([0,0,0]);
     br.model.animate(qMatb(m,:))
