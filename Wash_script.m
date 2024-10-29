@@ -50,7 +50,6 @@ qclose = [0,0.1,0.2];
 % Initialize array to hold the ellipsoid surface handles for each link
 ellipsoidHandles = gobjects(1, 5);  % Pre-allocate for 5 links
 
-
 % Define radii for each link’s ellipsoid
 radiiList = [
     0.1, 0.2, 0.1; % Link 1
@@ -86,9 +85,41 @@ for i = 1:5
     try delete(ellipsoidHandles(i)); end;
 end
 
+%% Creating mesh vertices to check collisions with
+% Create a rectangular wall mesh
+[Xw, Zw] = meshgrid(-4:0.05:4, -5:0.05:5); % Different ranges for X and Z for a rectangle
+sizeMat = size(Xw);
+Yw = repmat(2, sizeMat(1), sizeMat(2)); % Y plane remains constant
+% Plot one side of the rectangle as a surface
+surf(Xw, Yw, Zw,'FaceAlpha', 0.3, 'EdgeColor', 'none');
+% Combine one surface as a point cloud
+rectPointsWall = [Xw(:), Yw(:), Zw(:)];
+% Plot the rectangular prism's point cloud         
+rect_wall = plot3(rectPointsWall(:,1), rectPointsWall(:,2), rectPointsWall(:,3), 'b.');
+
+% Create a rectangular table mesh
+[Xt, Yt] = meshgrid(-2:0.05:0, 0.5:0.05:2); % Different ranges for X and Y for a rectangle
+sizeMat = size(Xt);
+Zt = repmat(0.83, sizeMat(1), sizeMat(2)); % Z plane remains constant
+% Plot one side of the rectangle as a surface
+surf(Xt, Yt, Zt,'FaceAlpha', 0.3, 'EdgeColor', 'none');
+% Combine one surface as a point cloud
+rectPointsTable = [Xt(:), Yt(:), Zt(:)];
+% Plot the rectangular prism's point cloud         
+rect_table = plot3(rectPointsTable(:,1), rectPointsTable(:,2), rectPointsTable(:,3), 'g.');
+
+% Create a rectangular alarm mesh
+[Xa, Za] = meshgrid(-0.4:0.05:-1.6, 1.6:0.05:1.9); % Different ranges for X and Z for a rectangle
+sizeMat = size(Xa);
+Ya = repmat(1, sizeMat(1), sizeMat(2)); % Y plane remains constant
+% Plot one side of the rectangle as a surface
+surf(Xa, Ya, Za,'FaceAlpha', 0.3, 'EdgeColor', 'none');
+% Combine one surface as a point cloud
+rectPointsAlarm = [Xa(:), Ya(:), Za(:)];
+% Plot the rectangular prism's point cloud         
+rect_alarm = plot3(rectPointsAlarm(:,1), rectPointsAlarm(:,2), rectPointsAlarm(:,3), 'r.');
 
 %%
-
 
 q0 = [0,0,0,0,0,0];
 q0_b = [0,0,0,0,0];
@@ -303,3 +334,33 @@ for m=1:steps
     drawnow()
 end
 
+
+% Function used for collision detection with mesh
+function algebraicDist = GetAlgebraicDist(points, centerPoint, radii)
+
+algebraicDist = ((points(:,1)-centerPoint(1))/radii(1)).^2 ...
+              + ((points(:,2)-centerPoint(2))/radii(2)).^2 ...
+              + ((points(:,3)-centerPoint(3))/radii(3)).^2;
+end
+
+
+
+
+
+
+
+
+%{
+%NEXT DETECT
+for i = 1:robot.model.n
+    % Setting the radii and transforms related to each set of ellipsoid links
+    radii = radiiList(i, :);
+    cubePointsAndOnes = [inv(tr(:,:,i+1)) * [cubePointsNew, ones(size(cubePointsNew, 1), 1)]']';
+    updatedCubePoints = cubePointsAndOnes(:,1:3);
+    
+    % Calculate algebraic distances and check points inside
+    algebraicDist = GetAlgebraicDist(updatedCubePoints, centerPoint, radii);
+    pointsInside = find(algebraicDist < 1);
+    disp(['2.10: There are ', num2str(size(pointsInside,1)), ' points inside the ', num2str(i), 'th ellipsoid']);
+end
+%}

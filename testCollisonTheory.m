@@ -31,7 +31,7 @@ L = robot.model.links;
 for i = 1:robot.model.n
     tr(:,:,i+1) = tr(:,:,i) * trotz(q(i)) * transl(0, 0, L(i).d) * transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
 end
-
+centerPoint = [0,0,0];
 % Plot each ellipsoid at each link
 for i = 1:robot.model.n
     radii = radiiList(i, :);
@@ -47,9 +47,48 @@ end
 %robot.model.teach;
 
 %NEXT APPLY MESH VERTICES ONTO TABLE AND WALL AND SINK
+[Y,Z] = meshgrid(-0.2:0.05:0.2,-0.2:0.05:0.2);
+sizeMat = size(Y);
+X = repmat(0.2,sizeMat(1),sizeMat(2));
+oneSideOfCube_h = surf(X,Y,Z);
 
+% Combine one surface as a point cloud
+cubePoints = [X(:),Y(:),Z(:)];
+
+% Make a cube by rotating the single side by 0,90,180,270, and around y to make the top and bottom faces
+cubePoints = [ cubePoints ...
+             ; cubePoints * rotz(pi/2)...
+             ; cubePoints * rotz(pi) ...
+             ; cubePoints * rotz(3*pi/2) ...
+             ; cubePoints * roty(pi/2) ...
+             ; cubePoints * roty(-pi/2)];         
+         
+% Plot the cube's point cloud         
+cubeAtOrigin_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'r.');
+cubePointsNew = cubePoints + repmat([0,1.5,1],size(cubePoints,1),1);
+cube_h = plot3(cubePointsNew(:,1),cubePointsNew(:,2),cubePointsNew(:,3),'b.');
+axis equal
 
 %NEXT DETECT
+for i = 1:robot.model.n
+    % Setting the radii and transforms related to each set of ellipsoid links
+    radii = radiiList(i, :);
+    cubePointsAndOnes = [inv(tr(:,:,i+1)) * [cubePointsNew, ones(size(cubePointsNew, 1), 1)]']';
+    updatedCubePoints = cubePointsAndOnes(:,1:3);
+    
+    % Calculate algebraic distances and check points inside
+    algebraicDist = GetAlgebraicDist(updatedCubePoints, centerPoint, radii);
+    pointsInside = find(algebraicDist < 1);
+    disp(['2.10: There are ', num2str(size(pointsInside,1)), ' points inside the ', num2str(i), 'th ellipsoid']);
+end
+
+
+function algebraicDist = GetAlgebraicDist(points, centerPoint, radii)
+
+algebraicDist = ((points(:,1)-centerPoint(1))/radii(1)).^2 ...
+              + ((points(:,2)-centerPoint(2))/radii(2)).^2 ...
+              + ((points(:,3)-centerPoint(3))/radii(3)).^2;
+end
 
 %NEXT MERGE THIS CODE W WASH_SCRIPT
 

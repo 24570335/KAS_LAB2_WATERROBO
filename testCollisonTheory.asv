@@ -35,8 +35,8 @@ end
 % Plot each ellipsoid at each link
 for i = 1:robot.model.n
     radii = radiiList(i, :);
-    [X, Y, Z] = ellipsoid(0, 0, 0, radii(1), radii(2), radii(3));
-    transformedPoints = tr(:,:,i+1) * [X(:), Y(:), Z(:), ones(numel(X), 1)]';
+    [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
+    transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))]; %used to make homogenous matrix, be able to transform all points in one go (list)
     X_transformed = reshape(transformedPoints(1, :), size(X));
     Y_transformed = reshape(transformedPoints(2, :), size(Y));
     Z_transformed = reshape(transformedPoints(3, :), size(Z));
@@ -47,7 +47,27 @@ end
 %robot.model.teach;
 
 %NEXT APPLY MESH VERTICES ONTO TABLE AND WALL AND SINK
+[Y,Z] = meshgrid(-0.2:0.05:0.2,-0.2:0.05:0.2);
+sizeMat = size(Y);
+X = repmat(0.2,sizeMat(1),sizeMat(2));
+oneSideOfCube_h = surf(X,Y,Z);
 
+% Combine one surface as a point cloud
+cubePoints = [X(:),Y(:),Z(:)];
+
+% Make a cube by rotating the single side by 0,90,180,270, and around y to make the top and bottom faces
+cubePoints = [ cubePoints ...
+             ; cubePoints * rotz(pi/2)...
+             ; cubePoints * rotz(pi) ...
+             ; cubePoints * rotz(3*pi/2) ...
+             ; cubePoints * roty(pi/2) ...
+             ; cubePoints * roty(-pi/2)];         
+         
+% Plot the cube's point cloud         
+cubeAtOrigin_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'r.');
+cubePoints = cubePoints + repmat([2,0,-0.5],size(cubePoints,1),1);
+cube_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'b.');
+axis equal
 
 %NEXT DETECT
 

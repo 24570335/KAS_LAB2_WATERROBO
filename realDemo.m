@@ -5,14 +5,12 @@ rosinit('192.168.27.1'); % If unsure, please ask a tutor
 % load('ur3_q.mat');
 r = UR3e_adjusted;
 
-
 jointAngles = [71*pi/180,-pi/6,0,0,0,0;
              pi,-0.452,0,0,0,pi/2;
              2*pi*7/18,-pi/6,1/12,-pi/2,0,pi/2;
              pi/4,-pi/6,0,pi/-2,0,pi/2;];
 
-
-%jointStateSubscriber = rossubscriber('/ur/joint_states','sensor_msgs/JointState');
+% jointStateSubscriber = rossubscriber('/ur/joint_states','sensor_msgs/JointState');
 
 %{
 the ROS computer is fully booted. If you are using the Pi, this may take up to 2 minutes from powering it on.
