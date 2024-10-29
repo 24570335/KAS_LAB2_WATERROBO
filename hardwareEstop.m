@@ -1,13 +1,15 @@
+
 % Close all existing serialport connections
 delete(serialportfind);
 
 
 % Manually specify the port you verified
-port_name = '/dev/cu.usbserial-14440';  % Adjust this if the port name is different
+port_name = '/dev/cu.usbserial-14330';  % Adjust this if the port name is different
 baud_rate = 9600;  % Match the baud rate with the Arduino code
 
-% Create the serial port object manually with the correct port and baud rate
-serialObj = serialport(port_name, baud_rate)
+% Create the serial port object manually
+% with the correct port and baud rate
+serialObj = serialport(port_name, baud_rate);
 
 %{
 % Check if any port is available
@@ -16,7 +18,7 @@ if isempty(port_number)
 else
     % Connect to the Arduino Due by creating a serialport object.
     % Use the port and baud specified in the Arduino code.
-    serialObj = serialport('/dev/cu.usbserial-14440',9600);
+    serialObj = serialport('/dev/cu.usbserial-14330',9600);
 end
 %}
 
