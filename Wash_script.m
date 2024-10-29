@@ -1,64 +1,27 @@
+%% Main script:
 % Initialising robot and base:
 hold on
 kitchenEnvironment;
 
 %Loading bottle body and cap:
 % Setting up BOTTLE BODY and applying transformations
-bottleBody = PlaceObject('BottleBody3.ply', [0,0,0]);
-vertsBody = get(bottleBody, 'Vertices');
-vertsHomogeneousBody = [vertsBody, ones(size(vertsBody, 1), 1)];
-initialPositionBody = [-1.1,1.1,.82];  % Updated x,y,z position
-rotationTransformBody = transl(initialPositionBody)*trotx(pi/2);  % Rotate 
-transformedVertsBody = (rotationTransformBody * vertsHomogeneousBody')';
-set(bottleBody, 'Vertices', transformedVertsBody(:, 1:3));
+bottleBody = initialiseBottlePart('BottleBody3.ply', [-1.1, 1.1, 0.82]);
+bottleCap = initialiseBottlePart('BottleCap3.ply', [-1.1, 1.1, 1]);
 
-% Setting up BOTTLE CAP and applying transformations
-bottleCap = PlaceObject('BottleCap3.ply', [0,0,0]);  % Place on top of table, on top of BOTTLE BODY (adjust coordinates as needed
-vertsCap = get(bottleCap, 'Vertices');
-vertsHomogeneousCap = [vertsCap, ones(size(vertsCap, 1), 1)];
-initialPositionCap = [-1.1,1.1,1];  % Updated x,y,z position
-rotationTransformCap = transl(initialPositionCap)*trotx(pi/2);  % Rotate 
-transformedVertsCap = (rotationTransformCap * vertsHomogeneousCap')';
-set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
-
+% Initialising robots and their movement waypoints / grippers
 r = UR3e_adjusted;
-% change to original stuff:
-waypoints = [71*pi/180,0,0,0,0,0;
-             pi,-1/12,1/12,-pi/2,3*pi/2,-pi/2;
-             2*pi*7/18,-1/12,1/12,-pi/2,2*pi,0;
-             pi/4,0,0,pi/-2,2*pi,0;];
-
-% waypoints used in real demo:
-% waypoints = [71*pi/180,-pi/6,0,0,0,0;
-%              pi,-0.452,0,0,0,pi/2;
-%              2*pi*7/18,-pi/6,1/12,-pi/2,0,pi/2;
-%              pi/4,-pi/6,0,pi/-2,0,pi/2;];
-
+waypointsUR3 = setupWaypointsUR3();
 br = BrushBot;
-waypoints2 = [0,-pi/2,0,0,0;
-             0,-109*pi/90,pi*19/90,0,0;
-             0,-pi/2,0,0,0;
-             0,-pi/2,0,0,0];
-
-
+waypointsBR = setupWaypointsBR();
 grip = Gripper;
-% grip.model.base = br.model.fkine(br.model.getpos());
-qopen = [0,0.2,0.4];
-qclose = [0,0.1,0.2];
+qopen = [0, 0.2, 0.4];
+qclose = [0, 0.1, 0.2];
 rawgrip = rawgripper;
 
 %% Creating ellipsoids on robot
-% Initialize array to hold the ellipsoid surface handles for each link
+% Initialising array to hold the ellipsoid surface handles for each link
+radiiList = setupRadiiList();
 ellipsoidHandles = gobjects(1, 5);  % Pre-allocate for 5 links
-
-% Define radii for each link’s ellipsoid
-radiiList = [
-    0.1, 0.2, 0.1; % Link 1
-    0.16, 0.09, 0.09; % Link 2
-    0.14, 0.09, 0.09; % Link 3
-    0.2, 0.09, 0.1; % Link 4
-    0.03, 0.03, 0.03  % Link 5
-];
 
 % Initialize transformation matrices and joint configuration
 q0 = [0,0,0,0,0,0];
@@ -66,13 +29,9 @@ tr = zeros(4, 4, r.model.n + 1);
 tr(:,:,1) = r.model.base;
 L = r.model.links;
 
-% Calculate transformations for each link
-for i = 1:r.model.n
-    tr(:,:,i+1) = tr(:,:,i) * trotz(q0(i)) * transl(0, 0, L(i).d) * transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
-end
-
 % Plot each ellipsoid at each link
 for i = 1:5
+    tr(:,:,i+1) = tr(:,:,i) * trotz(q0(i)) * transl(0, 0, L(i).d) * transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
     radii = radiiList(i, :);
     [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
     transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))]; %used to make homogenous matrix, be able to transform all points in one go (list)
@@ -119,7 +78,6 @@ surf(Xa, Ya, Za,'FaceAlpha', 0.3, 'EdgeColor', 'none');
 rectPointsAlarm = [Xa(:), Ya(:), Za(:)];
 % Plot the rectangular prism's point cloud         
 rect_alarm = plot3(rectPointsAlarm(:,1), rectPointsAlarm(:,2), rectPointsAlarm(:,3), 'r.');
-
 %%
 
 q0 = [0,0,0,0,0,0];
@@ -130,9 +88,9 @@ qmatopen = jtraj(grip.model.getpos(), qopen, steps);
 qmatclose = jtraj(qopen,qclose,steps);
 
 % Moving UR3e to bottle
-q1 = waypoints(1,:);
+q1 = waypointsUR3(1,:);
 qMat = jtraj(q0, q1, steps);
-q1b = waypoints2(1,:);
+q1b = waypointsBR(1,:);
 qMatb= jtraj(q0_b,q1b,steps);
 
 for j=1:steps
@@ -144,69 +102,39 @@ for j=1:steps
     grip.model.animate([0,0,0]);
     % grip.model.animate(qmatopen(j,:))
 
-
     % Recalculate transformations for each link in UR3 for each step
     tr(:,:,1) = r.model.base;
-    for i = 1:r.model.n
+    for i = 1:5
+        % Recalculate transformations for each link in UR3 for each step
         tr(:,:,i+1) = tr(:,:,i) * trotz(qMat(j, i)) * transl(0, 0, L(i).d) * transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
-    end
-
-    % Delete the previous ellipsoids if they exist
-    for i = 1:5
+        % Delete the previous ellipsoids if they exist
         try delete(ellipsoidHandles(i)); end;
-    end
-
-    % Update each ellipsoid position to match current UR3 link position
-    for i = 1:5
         radii = radiiList(i, :);
-
         % Extract the center point from the transformation matrix
         centerPoint = tr(1:3, 4, i+1)'; % Extract translation components as centerPoint
-        
         [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
-        
         % Apply updated transformation to the ellipsoid
         transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
         X_transformed = reshape(transformedPoints(1, :), size(X));
         Y_transformed = reshape(transformedPoints(2, :), size(Y));
         Z_transformed = reshape(transformedPoints(3, :), size(Z));
-
-        
         % Update the plot (refresh each ellipsoid to its new position)
         ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
 
         % Using GetAlgebraicDist find how many points are inside each ellipsoid
-        % For Wall Mesh
-        rectPointsWall1 = [inv(tr(:,:,i+1)) * [rectPointsWall, ones(size(rectPointsWall, 1), 1)]']';
-        rectPointsWall2 = rectPointsWall1(:,1:3);
-        algebraicDist = GetAlgebraicDist(rectPointsWall2, [0, 0, 0], radii);
-        pointsInside = find(algebraicDist < 1);
-        disp(['From Wall there are ', num2str(size(pointsInside,1)), ' points inside the ', num2str(i), 'th ellipsoid']);
-     
-
-        % For Table Mesh
-        rectPointsTable1 = [inv(tr(:,:,i+1)) * [rectPointsTable, ones(size(rectPointsTable, 1), 1)]']';
-        rectPointsTable2 = rectPointsTable1(:,1:3);
-        algebraicDist = GetAlgebraicDist(rectPointsTable2, [0, 0, 0], radii);
-        pointsInside = find(algebraicDist < 1);
-        disp(['From Table there are ', num2str(size(pointsInside,1)), ' points inside the ', num2str(i), 'th ellipsoid']);
-        % For Alarm Mesh
-        rectPointsAlarm1 = [inv(tr(:,:,i+1)) * [rectPointsAlarm, ones(size(rectPointsAlarm, 1), 1)]']';
-        rectPointsAlarm2 = rectPointsAlarm1(:,1:3);
-        algebraicDist = GetAlgebraicDist(rectPointsAlarm2, [0, 0, 0], radii);
-        pointsInside = find(algebraicDist < 1);
-        disp(['From Alarm there are ', num2str(size(pointsInside,1)), ' points inside the ', num2str(i), 'th ellipsoid']);
+        % Use `collisionCheck` for each object mesh
+        collisionCheck(rectPointsWall, centerPoint, radii, 'Wall', i, tr);
+        collisionCheck(rectPointsTable, centerPoint, radii, 'Table', i, tr);
+        collisionCheck(rectPointsAlarm, centerPoint, radii, 'Alarm', i, tr); 
     end
-
-    
     drawnow()
 end
 
 
 % Moving UR3e to sink
-q2 = waypoints(2,:);
+q2 = waypointsUR3(2,:);
 qMat = jtraj(q1,q2,steps);
-q2b = waypoints2(2,:);
+q2b = waypointsBR(2,:);
 qMatb = jtraj(q1b,q2b,steps);
 %qMatg = jtraj(q1b,q2b,steps)
 
@@ -242,16 +170,13 @@ for k=1:steps
 
     % Update each ellipsoid position to match current link position
     for i = 1:5
-
         radii = radiiList(i, :);
         [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
-        
         % Apply updated transformation to the ellipsoid
         transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
         X_transformed = reshape(transformedPoints(1, :), size(X));
         Y_transformed = reshape(transformedPoints(2, :), size(Y));
         Z_transformed = reshape(transformedPoints(3, :), size(Z));
-        
         % Update the plot (refresh each ellipsoid to its new position)
         ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
     end
@@ -317,7 +242,7 @@ for t = 1:longsteps
     drawnow
 end
 
-q2b = waypoints2(2,:);
+q2b = waypointsBR(2,:);
 qMatb = jtraj(q1b,q2b,longsteps);
 
 
@@ -343,9 +268,9 @@ end
 
 % Moving UR3e to tipping position
 steps = 25;
-q3 = waypoints(3,:);
+q3 = waypointsUR3(3,:);
 qMat = jtraj(q2,q3,steps);
-q3b = waypoints2(3,:);
+q3b = waypointsBR(3,:);
 qMatb= jtraj(q2b,q3b,steps);
 
 for l = 1:steps
@@ -397,9 +322,9 @@ for l = 1:steps
 end
 
 % Moving UR3e to drying station
-q4 = waypoints(4,:);
+q4 = waypointsUR3(4,:);
 qMat = jtraj(q3,q4,steps);
-q4b = waypoints2(4,:);
+q4b = waypointsBR(4,:);
 qMatb= jtraj(q3b,q4b,steps);
 for m=1:steps
     r.model.animate(qMat(m,:)) % Animating the movement to dry bottle
@@ -455,24 +380,113 @@ algebraicDist = ((points(:,1)-centerPoint(1))/radii(1)).^2 ...
               + ((points(:,3)-centerPoint(3))/radii(3)).^2;
 end
 
+% Function to initialise each bottle part and its vertices
+function part = initialiseBottlePart(filename, position)
+    part = PlaceObject(filename, [0, 0, 0]);
+    verts = get(part, 'Vertices');
+    vertsHomogeneous = [verts, ones(size(verts, 1), 1)];
+    transform = transl(position) * trotx(pi/2);
+    transformedVerts = (transform * vertsHomogeneous')';
+    set(part, 'Vertices', transformedVerts(:, 1:3));
+end
 
+% Function to setup waypointsUR3 for UR3
+function waypointsUR3 = setupWaypointsUR3()
+    waypointsUR3 = [71 * pi/180, 0, 0, 0, 0, 0;
+                 pi, -1/12, 1/12, -pi/2, 3*pi/2, -pi/2;
+                 2 * pi * 7/18, -1/12, 1/12, -pi/2, 2*pi, 0;
+                 pi/4, 0, 0, pi/-2, 2*pi, 0];
+end
 
+% Function to setup waypoints for BrushBot
+function waypointsBR = setupWaypointsBR()
+    waypointsBR = [0, -pi/2, 0, 0, 0;
+                  0, -109*pi/90, pi*19/90, 0, 0;
+                  0, -pi/2, 0, 0, 0;
+                  0, -pi/2, 0, 0, 0];
+end
 
+% Function setting up radii list for each link to create an ellipsoid
+function radiiList = setupRadiiList()
+    radiiList = [
+        0.1, 0.2, 0.1;   % Link 1
+        0.16, 0.09, 0.09; % Link 2
+        0.14, 0.09, 0.09; % Link 3
+        0.2, 0.09, 0.1;   % Link 4
+        0.03, 0.03, 0.03  % Link 5
+    ];
+end
 
+% Function to create a rectangular mesh and point cloud
+function points = createMesh(xRange, yRange, zRange, color)
+    [X, Z] = meshgrid(xRange(1):0.05:xRange(2), zRange(1):0.05:zRange(2));
+    sizeMat = size(X);
+    Y = repmat(yRange(1), sizeMat(1), sizeMat(2));
+    surf(X, Y, Z, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    points = [X(:), Y(:), Z(:)];
+    plot3(points(:,1), points(:,2), points(:,3), color);
+end
 
-
+% Function for collision checking and reporting
+function collisionCheck(meshPoints, centerPoint, radii, objectName, linkIndex, tr)
+    transformedPoints1 = [inv(tr(:,:,linkIndex+1)) * [meshPoints, ones(size(meshPoints, 1), 1)]']';
+    transformedPoints = transformedPoints1(:,1:3);
+    algebraicDist = GetAlgebraicDist(transformedPoints, [0,0,0], radii);
+    pointsInside = find(algebraicDist < 1);
+    disp(['From ', objectName, ' there are ', num2str(numel(pointsInside)), ' points inside the ', num2str(linkIndex), 'th ellipsoid']);
+end
 
 %{
-%NEXT DETECT
-for i = 1:robot.model.n
-    % Setting the radii and transforms related to each set of ellipsoid links
-    radii = radiiList(i, :);
-    cubePointsAndOnes = [inv(tr(:,:,i+1)) * [cubePointsNew, ones(size(cubePointsNew, 1), 1)]']';
-    updatedCubePoints = cubePointsAndOnes(:,1:3);
+function tr = updateEllipsoids(tr, qMat, stepIndex, ellipsoidHandles, radiiList, L)
+    % Loop through each link and update the transformation and ellipsoid
+    numLinks = numel(L); % Number of links in the robot model
     
-    % Calculate algebraic distances and check points inside
-    algebraicDist = GetAlgebraicDist(updatedCubePoints, centerPoint, radii);
-    pointsInside = find(algebraicDist < 1);
-    disp(['2.10: There are ', num2str(size(pointsInside,1)), ' points inside the ', num2str(i), 'th ellipsoid']);
+    for i = 1:numLinks
+        % Recalculate transformation for the current link
+        tr(:,:,i+1) = tr(:,:,i) * trotz(qMat(stepIndex, i)) * transl(0, 0, L(i).d) * ...
+                      transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
+        
+        % Delete the previous ellipsoid handle if it exists
+        try delete(ellipsoidHandles(i)); end;
+
+        % Get radii for the current link's ellipsoid
+        radii = radiiList(i, :);
+
+        % Compute the center point from the transformation matrix
+        centerPoint = tr(1:3, 4, i+1)';
+
+        % Create ellipsoid data
+        [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
+
+        % Apply transformation to the ellipsoid points
+        transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
+        X_transformed = reshape(transformedPoints(1, :), size(X));
+        Y_transformed = reshape(transformedPoints(2, :), size(Y));
+        Z_transformed = reshape(transformedPoints(3, :), size(Z));
+
+        % Update the plot (refresh each ellipsoid to its new position)
+        ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, ...
+                                   'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    end
+end
+%}
+
+%{
+function updateEllipsoids(tr, qMat, stepIndex, i, ellipsoidHandles, radiiList, L) 
+        % Recalculate transformations for each link in UR3 for each step
+        tr(:,:,i+1) = tr(:,:,i) * trotz(qMat(stepIndex, i)) * transl(0, 0, L(i).d) * transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
+        % Delete the previous ellipsoids if they exist
+        try delete(ellipsoidHandles(i)); end;
+        radii = radiiList(i, :);
+        % Extract the center point from the transformation matrix
+        centerPoint = tr(1:3, 4, i+1)'; % Extract translation components as centerPoint
+        [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
+        % Apply updated transformation to the ellipsoid
+        transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
+        X_transformed = reshape(transformedPoints(1, :), size(X));
+        Y_transformed = reshape(transformedPoints(2, :), size(Y));
+        Z_transformed = reshape(transformedPoints(3, :), size(Z));
+        % Update the plot (refresh each ellipsoid to its new position)
+        ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
 end
 %}
