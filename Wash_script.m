@@ -259,29 +259,102 @@ for k=1:steps
 
     drawnow()
 end
+qspin0= [0,0,0];
+qspin1= [4*pi/3,0,0];
+longsteps = 100;
+qmatspin = jtraj(qspin0,qspin1, longsteps);
 
+for n = 1:longsteps
+    r.model.animate(q2); % stay
+    rawgrip.model.base = r.model.fkine(q2);
+    rawgrip.model.animate([0,0,0]);
+    grip.model.animate(qmatspin(n,:)); %remove cap
+    drawnow
+end
+
+qMatb= jtraj(q2b,q3b,longsteps);
+for o = 1:longsteps
+    r.model.animate(q2); % stay
+    rawgrip.model.base = r.model.fkine(q2);
+    rawgrip.model.animate([0,0,0]);
+    grip.model.base = br.model.fkine(qMatb(o,:)); %put cap away
+    grip.model.animate([4*pi/3,0,0]);
+    br.model.animate(qMatb(o,:))
+    drawnow
+end
+
+qMatb= jtraj(q3b,q0_b,longsteps);
+
+for s = 1:longsteps
+    r.model.animate(q2); % stay
+    rawgrip.model.base = r.model.fkine(q2);
+    rawgrip.model.animate([0,0,0]);
+    grip.model.base = br.model.fkine(qMatb(s,:)); %put cap away2
+    grip.model.animate([4*pi/3,0,0]);
+    br.model.animate(qMatb(s,:))
+    drawnow
+end
+
+qMatb= jtraj(q0_b,q1b,longsteps);
+
+for t = 1:longsteps
+    r.model.animate(q2); % stay
+    rawgrip.model.base = r.model.fkine(q2);
+    rawgrip.model.animate([0,0,0]);
+    grip.model.base = br.model.fkine(qMatb(t,:)); %waypoint to wash
+    grip.model.animate([4*pi/3,0,0]);
+    br.model.animate(qMatb(t,:))
+    drawnow
+end
+
+q2b = waypoints2(2,:);
+qMatb = jtraj(q1b,q2b,longsteps);
+
+
+for p = 1:longsteps %return to wash
+    r.model.animate(q2); % stay
+    rawgrip.model.base = r.model.fkine(q2);
+    rawgrip.model.animate([0,0,0]);
+
+    grip.model.base = br.model.fkine(qMatb(p,:)); 
+    grip.model.animate([4*pi/3,0,0]);
+    br.model.animate(qMatb(p,:))
+    drawnow
+end
+
+
+for q = 1:longsteps %clean
+    r.model.animate(q2); % stay
+    rawgrip.model.base = r.model.fkine(q2);
+    rawgrip.model.animate([0,0,0]);
+    grip.model.animate(qmatspin(q,:)); %clean
+    drawnow
+end
 
 % Moving UR3e to tipping position
+steps = 25;
 q3 = waypoints(3,:);
 qMat = jtraj(q2,q3,steps);
 q3b = waypoints2(3,:);
 qMatb= jtraj(q2b,q3b,steps);
-for l=1:steps
-    r.model.animate(qMat(l,:)) % Animating the movement of a tipping position
-    rawgrip.model.base = r.model.fkine(qMat(l,:));
+
+for z = 1:steps
+
+    r.model.animate(qMat(z,:)); % Animating the movement of a tipping position
+    rawgrip.model.base = r.model.fkine(qMat(z,:));
     rawgrip.model.animate([0,0,0]);
-    lastLinkBody = r.model.fkine(qMat(l,:));
+    lastLinkBody = r.model.fkine(qMat(z,:));
     transformedVertsBody = (lastLinkBody.T * vertsHomogeneousBody')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleBody, 'Vertices', transformedVertsBody(:, 1:3));
 
-    lastLinkCap = r.model.fkine(qMat(l,:));
+    lastLinkCap = r.model.fkine(qMat(z,:));
     lastLinkCap = lastLinkCap.T * transl(0, 0.18, 0);
     transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
     drawnow;
-    grip.model.base = br.model.fkine(qMatb(l,:));
+    grip.model.base = br.model.fkine(qMatb(z,:));
     grip.model.animate([0,0,0]);
-    br.model.animate(qMatb(l,:))
+    br.model.animate(qMatb(z,:))
 
     % Recalculate transformations for each link in UR3 for each step
     tr(:,:,1) = r.model.base;
