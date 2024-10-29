@@ -23,10 +23,16 @@ set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
 
 
 r = UR3e_adjusted;
+% change to original stuff:
 waypoints = [71*pi/180,0,0,0,0,0;
              pi,-1/12,1/12,-pi/2,3*pi/2,-pi/2;
              2*pi*7/18,-1/12,1/12,-pi/2,2*pi,0;
              pi/4,0,0,pi/-2,2*pi,0;];
+
+% waypoints = [71*pi/180,-pi/6,0,0,0,0;
+%              pi,-0.452,0,0,0,pi/2;
+%              2*pi*7/18,-pi/6,1/12,-pi/2,0,pi/2;
+%              pi/4,-pi/6,0,pi/-2,0,pi/2;];
 
 br = BrushBot;
 waypoints2 = [0,-pi/2,0,0,0;
@@ -38,7 +44,8 @@ waypoints2 = [0,-pi/2,0,0,0;
 grip = Gripper;
 
 
-q0 = [0,0,0,0,0,0];
+
+q0 = [0,-pi/2,0,-pi/2,0,0];
 q0_b = [0,0,0,0,0];
 steps = 25;
 
@@ -76,7 +83,16 @@ for k=1:steps
     set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
     drawnow;
     br.model.animate(qMatb(k,:));
-
+    
+    % if k == 24
+    %     r.model.teach();
+    %     pause()
+    % %     xyz = r.model.fkine(qMat(k,:))
+    % %     xyz(3,4) = xyz(3,4)+1;
+    % %     newq = r.model.ikcon(xyz)
+    % %     %xyzNew = transl(-1.6,1.53,1.9)
+    % %     %newq = r.model.ikcon(xyzNew)
+    % end
     %grip.model.animate(qMatg(k, :)); % Animating the movement to sink
 
     drawnow;

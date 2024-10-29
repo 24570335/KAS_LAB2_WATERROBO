@@ -44,9 +44,10 @@ for i = 1:robot.model.n
 end
 
 % Optional: Add teach panel for interactive control
-robot.model.teach;
+%robot.model.teach;
 
 %NEXT APPLY MESH VERTICES ONTO TABLE AND WALL AND SINK
+
 
 %NEXT DETECT
 
