@@ -36,7 +36,7 @@ end
 for i = 1:robot.model.n
     radii = radiiList(i, :);
     [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
-    transformedPoints = tr(:,:,i+1) * [X(:)', Y(:)', Z(:)', ones(numel(X), 1)]; %used to make homogenous matrix, be able to transform all points in one go (list)
+    transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))]; %used to make homogenous matrix, be able to transform all points in one go (list)
     X_transformed = reshape(transformedPoints(1, :), size(X));
     Y_transformed = reshape(transformedPoints(2, :), size(Y));
     Z_transformed = reshape(transformedPoints(3, :), size(Z));

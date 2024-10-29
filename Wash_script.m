@@ -47,6 +47,10 @@ qopen = [0,0.2,0.4];
 qclose = [0,0.1,0.2];
 
 %% Creating ellipsoids on robot
+% Initialize array to hold the ellipsoid surface handles for each link
+ellipsoidHandles = gobjects(1, 5);  % Pre-allocate for 5 links
+
+
 % Define radii for each link’s ellipsoid
 radiiList = [
     0.1, 0.2, 0.1; % Link 1
@@ -70,13 +74,19 @@ end
 % Plot each ellipsoid at each link
 for i = 1:5
     radii = radiiList(i, :);
-    [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3), 20);
+    [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
     transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))]; %used to make homogenous matrix, be able to transform all points in one go (list)
     X_transformed = reshape(transformedPoints(1, :), size(X));
     Y_transformed = reshape(transformedPoints(2, :), size(Y));
     Z_transformed = reshape(transformedPoints(3, :), size(Z));
-    surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
 end
+
+for i = 1:5
+    try delete(ellipsoidHandles(i)); end;
+end
+
+
 %%
 
 
@@ -107,6 +117,11 @@ for j=1:steps
         tr(:,:,i+1) = tr(:,:,i) * trotz(qMat(j, i)) * transl(0, 0, L(i).d) * transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
     end
 
+    % Delete the previous ellipsoids if they exist
+    for i = 1:5
+        try delete(ellipsoidHandles(i)); end;
+    end
+
     % Update each ellipsoid position to match current link position
     for i = 1:5
         radii = radiiList(i, :);
@@ -119,7 +134,7 @@ for j=1:steps
         Z_transformed = reshape(transformedPoints(3, :), size(Z));
         
         % Update the plot (refresh each ellipsoid to its new position)
-        surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
     end
     
     drawnow()
@@ -151,6 +166,35 @@ for k=1:steps
     grip.model.animate([0,0,0]);
     %grip.model.animate(qMatg(k, :)); % Animating the movement to sink
 
+    % Recalculate transformations for each link in UR3 for each step
+    tr(:,:,1) = r.model.base;
+    for i = 1:r.model.n
+        tr(:,:,i+1) = tr(:,:,i) * trotz(qMat(k, i)) * transl(0, 0, L(i).d) * transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
+    end
+
+    % Delete the previous ellipsoids if they exist
+    for i = 1:5
+        try delete(ellipsoidHandles(i)); end;
+    end
+
+    % Update each ellipsoid position to match current link position
+    for i = 1:5
+        try delete(currentEllipsoid); end;
+
+        radii = radiiList(i, :);
+        [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
+        
+        % Apply updated transformation to the ellipsoid
+        transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
+        X_transformed = reshape(transformedPoints(1, :), size(X));
+        Y_transformed = reshape(transformedPoints(2, :), size(Y));
+        Z_transformed = reshape(transformedPoints(3, :), size(Z));
+        
+        % Update the plot (refresh each ellipsoid to its new position)
+        ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    end
+
+
     drawnow()
 end
 
@@ -176,7 +220,35 @@ for l=1:steps
     grip.model.animate([0,0,0]);
     br.model.animate(qMatb(l,:))
 
-    
+    % Recalculate transformations for each link in UR3 for each step
+    tr(:,:,1) = r.model.base;
+    for i = 1:r.model.n
+        tr(:,:,i+1) = tr(:,:,i) * trotz(qMat(l, i)) * transl(0, 0, L(i).d) * transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
+    end
+
+    % Delete the previous ellipsoids if they exist
+    for i = 1:5
+        try delete(ellipsoidHandles(i)); end;
+    end
+
+    % Update each ellipsoid position to match current link position
+    for i = 1:5
+        try delete(currentEllipsoid); end;
+
+        radii = radiiList(i, :);
+        [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
+        
+        % Apply updated transformation to the ellipsoid
+        transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
+        X_transformed = reshape(transformedPoints(1, :), size(X));
+        Y_transformed = reshape(transformedPoints(2, :), size(Y));
+        Z_transformed = reshape(transformedPoints(3, :), size(Z));
+        
+        % Update the plot (refresh each ellipsoid to its new position)
+        ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    end
+
+
     drawnow()
 end
 
@@ -200,6 +272,34 @@ for m=1:steps
     grip.model.animate([0,0,0]);
     br.model.animate(qMatb(m,:))
     
+    % Recalculate transformations for each link in UR3 for each step
+    tr(:,:,1) = r.model.base;
+    for i = 1:r.model.n
+        tr(:,:,i+1) = tr(:,:,i) * trotz(qMat(m, i)) * transl(0, 0, L(i).d) * transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
+    end
+
+    % Delete the previous ellipsoids if they exist
+    for i = 1:5
+        try delete(ellipsoidHandles(i)); end;
+    end
+
+    % Update each ellipsoid position to match current link position
+    for i = 1:5
+        try delete(currentEllipsoid); end;
+
+        radii = radiiList(i, :);
+        [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
+        
+        % Apply updated transformation to the ellipsoid
+        transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
+        X_transformed = reshape(transformedPoints(1, :), size(X));
+        Y_transformed = reshape(transformedPoints(2, :), size(Y));
+        Z_transformed = reshape(transformedPoints(3, :), size(Z));
+        
+        % Update the plot (refresh each ellipsoid to its new position)
+        ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    end
+
     drawnow()
 end
 
