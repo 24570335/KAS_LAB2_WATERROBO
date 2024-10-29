@@ -45,6 +45,7 @@ grip = Gripper;
 % grip.model.base = br.model.fkine(br.model.getpos());
 qopen = [0,0.2,0.4];
 qclose = [0,0.1,0.2];
+rawgrip = rawgripper;
 
 %% Creating ellipsoids on robot
 % Initialize array to hold the ellipsoid surface handles for each link
@@ -136,6 +137,8 @@ qMatb= jtraj(q0_b,q1b,steps);
 
 for j=1:steps
     r.model.animate(qMat(j, :)) % Animating the movement to bottle
+    rawgrip.model.base = r.model.fkine(qMat(j,:));
+    rawgrip.model.animate([0,0,0]);
     br.model.animate(qMatb(j,:))
     grip.model.base = br.model.fkine(qMatb(j,:));
     grip.model.animate([0,0,0]);
@@ -209,7 +212,8 @@ qMatb = jtraj(q1b,q2b,steps);
 
 for k=1:steps
     r.model.animate(qMat(k,:)); % Animating the movement to sink
-    
+    rawgrip.model.base = r.model.fkine(qMat(k,:));
+    rawgrip.model.animate([0,0,0]);
     lastLinkBody = r.model.fkine(qMat(k,:));
     transformedVertsBody = (lastLinkBody.T * vertsHomogeneousBody')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleBody, 'Vertices', transformedVertsBody(:, 1:3));
@@ -264,7 +268,8 @@ q3b = waypoints2(3,:);
 qMatb= jtraj(q2b,q3b,steps);
 for l=1:steps
     r.model.animate(qMat(l,:)) % Animating the movement of a tipping position
-
+    rawgrip.model.base = r.model.fkine(qMat(l,:));
+    rawgrip.model.animate([0,0,0]);
     lastLinkBody = r.model.fkine(qMat(l,:));
     transformedVertsBody = (lastLinkBody.T * vertsHomogeneousBody')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleBody, 'Vertices', transformedVertsBody(:, 1:3));
@@ -315,7 +320,8 @@ q4b = waypoints2(4,:);
 qMatb= jtraj(q3b,q4b,steps);
 for m=1:steps
     r.model.animate(qMat(m,:)) % Animating the movement to dry bottle
-
+    rawgrip.model.base = r.model.fkine(qMat(m,:));
+    rawgrip.model.animate([0,0,0]);
     lastLinkBody = r.model.fkine(qMat(m,:));
     transformedVertsBody = (lastLinkBody.T * vertsHomogeneousBody')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleBody, 'Vertices', transformedVertsBody(:, 1:3));
