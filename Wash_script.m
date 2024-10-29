@@ -21,7 +21,6 @@ rotationTransformCap = transl(initialPositionCap)*trotx(pi/2);  % Rotate
 transformedVertsCap = (rotationTransformCap * vertsHomogeneousCap')';
 set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
 
-
 r = UR3e_adjusted;
 % change to original stuff:
 waypoints = [71*pi/180,0,0,0,0,0;
@@ -29,6 +28,7 @@ waypoints = [71*pi/180,0,0,0,0,0;
              2*pi*7/18,-1/12,1/12,-pi/2,2*pi,0;
              pi/4,0,0,pi/-2,2*pi,0;];
 
+% waypoints used in real demo:
 % waypoints = [71*pi/180,-pi/6,0,0,0,0;
 %              pi,-0.452,0,0,0,pi/2;
 %              2*pi*7/18,-pi/6,1/12,-pi/2,0,pi/2;
@@ -46,8 +46,41 @@ grip = Gripper;
 qopen = [0,0.2,0.4];
 qclose = [0,0.1,0.2];
 
+%% Creating ellipsoids on robot
+% Define radii for each link’s ellipsoid
+radiiList = [
+    0.1, 0.2, 0.1; % Link 1
+    0.16, 0.09, 0.09; % Link 2
+    0.14, 0.09, 0.09; % Link 3
+    0.2, 0.09, 0.1; % Link 4
+    0.03, 0.03, 0.03  % Link 5
+];
 
-q0 = [0,-pi/2,0,-pi/2,0,0];
+% Initialize transformation matrices and joint configuration
+q0 = [0,0,0,0,0,0];
+tr = zeros(4, 4, r.model.n + 1);
+tr(:,:,1) = r.model.base;
+L = r.model.links;
+
+% Calculate transformations for each link
+for i = 1:r.model.n
+    tr(:,:,i+1) = tr(:,:,i) * trotz(q0(i)) * transl(0, 0, L(i).d) * transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
+end
+
+% Plot each ellipsoid at each link
+for i = 1:5
+    radii = radiiList(i, :);
+    [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3), 20);
+    transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))]; %used to make homogenous matrix, be able to transform all points in one go (list)
+    X_transformed = reshape(transformedPoints(1, :), size(X));
+    Y_transformed = reshape(transformedPoints(2, :), size(Y));
+    Z_transformed = reshape(transformedPoints(3, :), size(Z));
+    surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+end
+%%
+
+
+q0 = [0,0,0,0,0,0];
 q0_b = [0,0,0,0,0];
 steps = 25;
 
@@ -67,6 +100,27 @@ for j=1:steps
     grip.model.animate([0,0,0]);
     % grip.model.animate(qmatopen(j,:))
 
+
+    % Recalculate transformations for each link in UR3 for each step
+    tr(:,:,1) = r.model.base;
+    for i = 1:r.model.n
+        tr(:,:,i+1) = tr(:,:,i) * trotz(qMat(j, i)) * transl(0, 0, L(i).d) * transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
+    end
+
+    % Update each ellipsoid position to match current link position
+    for i = 1:5
+        radii = radiiList(i, :);
+        [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
+        
+        % Apply updated transformation to the ellipsoid
+        transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
+        X_transformed = reshape(transformedPoints(1, :), size(X));
+        Y_transformed = reshape(transformedPoints(2, :), size(Y));
+        Z_transformed = reshape(transformedPoints(3, :), size(Z));
+        
+        % Update the plot (refresh each ellipsoid to its new position)
+        surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    end
     
     drawnow()
 end
@@ -91,22 +145,10 @@ for k=1:steps
     transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
     drawnow;
-    br.model.animate(qMatb(k,:));
-<<<<<<< HEAD
-    
-    % if k == 24
-    %     r.model.teach();
-    %     pause()
-    % %     xyz = r.model.fkine(qMat(k,:))
-    % %     xyz(3,4) = xyz(3,4)+1;
-    % %     newq = r.model.ikcon(xyz)
-    % %     %xyzNew = transl(-1.6,1.53,1.9)
-    % %     %newq = r.model.ikcon(xyzNew)
-    % end
-=======
+    br.model.animate(qMatb(k,:));    
+
     grip.model.base = br.model.fkine(qMatb(k,:));
     grip.model.animate([0,0,0]);
->>>>>>> e4736dc0b0d3836daca12a773b6fab3762f5cee6
     %grip.model.animate(qMatg(k, :)); % Animating the movement to sink
 
     drawnow()

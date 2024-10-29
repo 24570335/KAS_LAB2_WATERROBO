@@ -23,10 +23,17 @@ set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
 
 
 r = UR3e_adjusted;
+% change to original stuff:
 waypoints = [71*pi/180,0,0,0,0,0;
              pi,-1/12,1/12,-pi/2,3*pi/2,-pi/2;
              2*pi*7/18,-1/12,1/12,-pi/2,2*pi,0;
              pi/4,0,0,pi/-2,2*pi,0;];
+
+% waypoints used in real demo:
+% waypoints = [71*pi/180,-pi/6,0,0,0,0;
+%              pi,-0.452,0,0,0,pi/2;
+%              2*pi*7/18,-pi/6,1/12,-pi/2,0,pi/2;
+%              pi/4,-pi/6,0,pi/-2,0,pi/2;];
 
 br = BrushBot;
 waypoints2 = [0,-pi/2,0,0,0;
@@ -40,7 +47,8 @@ grip = Gripper;
 qopen = [0,0.2,0.4];
 qclose = [0,0.1,0.2];
 
-q0 = [0,0,0,0,0,0];
+
+q0 = [0,-pi/2,0,-pi/2,0,0];
 q0_b = [0,0,0,0,0];
 steps = 25;
 
@@ -84,7 +92,8 @@ for k=1:steps
     transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
     drawnow;
-    br.model.animate(qMatb(k,:));
+    br.model.animate(qMatb(k,:));    
+
     grip.model.base = br.model.fkine(qMatb(k,:));
     grip.model.animate([0,0,0]);
     %grip.model.animate(qMatg(k, :)); % Animating the movement to sink
@@ -110,7 +119,7 @@ for l=1:steps
     transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
     drawnow;
-    grip.model.base = br.model.fkine(qMatb(k,:));
+    grip.model.base = br.model.fkine(qMatb(l,:));
     grip.model.animate([0,0,0]);
     br.model.animate(qMatb(l,:))
 
@@ -134,7 +143,8 @@ for m=1:steps
     lastLinkCap = lastLinkCap.T * transl(0, 0.18, 0);
     transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
-       
+    grip.model.base = br.model.fkine(qMatb(m,:));
+    grip.model.animate([0,0,0]);
     br.model.animate(qMatb(m,:))
     
     drawnow()
