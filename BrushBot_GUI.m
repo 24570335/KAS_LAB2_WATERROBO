@@ -9,11 +9,11 @@ function BrushBot_GUI
     brushBot = BrushBot();  % Create an instance of BrushBot
     brushBot.CreateModel(); % Ensure the model is initialized properly
 
+    % Store the BrushBot object in the figure's UserData field
+    fig.UserData = struct('robot', brushBot);  % Store it as a struct
+    
     % Set the base transformation matrix to place it at the origin (0, 0, 0)
     brushBot.model.base = transl(0, 0, 0);  % Set base at origin
-
-    % Store the robot object in UserData for later access
-    fig.UserData.robot = brushBot;
 
     % Set an initial joint configuration (natural position)
     initialQ = zeros(1, brushBot.model.n);  % Adjust for the number of joints
@@ -22,11 +22,21 @@ function BrushBot_GUI
     clf;  % Clear the current figure
 
     % Plot the robot in the initial configuration with a defined workspace
-    brushBot.model.plot(initialQ, 'workspace', [-1 1 -1 1 -1 1]);
+    brushBot.model.plot(initialQ, 'workspace', [-1.5 1.5 -1.5 1.5 -1.5 1.5]);
     
     % Ensure the view is properly aligned
     view(3);  % Set to 3D view
     axis equal;  % Equal scaling along axes
+
+    
+
+    disp(brushBot.model);
+    disp('GUI and BrushBot initialized successfully.');
+
+if isempty(brushBot.model.links)
+    error('Robot model is not initialized properly.');
+end
+
 
     
     numJoints = brushBot.model.n;  % Number of joints in the robot
@@ -39,6 +49,11 @@ function BrushBot_GUI
             'Value', 0, ...
             'ValueChangedFcn', @(sld, ~)update_joint(i, sld.Value));
     end
+
+    % Add a button to enable the "teach" mode
+    uibutton(fig, 'Position', [50 600 100 40], 'Text', 'Teach Mode', ...
+        'ButtonPushedFcn', @(~,~)activate_teach_mode());
+
 
     % Place D-Pad Style Controls below the sliders
     uibutton(fig, 'Position', [240 150 60 40], 'Text', 'Up', ...
@@ -122,48 +137,57 @@ function BrushBot_GUI
         drawnow;  % Refresh the plot
     end
 
-function move_cartesian(delta)
-    % Callback for Cartesian movement buttons
-    robot = fig.UserData.robot;
+    function move_cartesian(delta)
+    fig = gcf;  % Get the GUI figure handle
+
+    % Print UserData to verify its content and type
+    userData = fig.UserData;
+    disp('UserData content:');
+    disp(userData);
+    disp('UserData type:');
+    disp(class(userData));
+
+    % Access the BrushBot object safely
+    if isstruct(userData) && isfield(userData, 'robot')
+        robot = userData.robot;  % Access the BrushBot instance
+    else
+        error('UserData is not properly set or does not contain the robot object.');
+    end
+
+    % Access the SerialLink model inside the BrushBot object
+    serialLinkModel = robot.model;
 
     % Get the current joint configuration
-    currentQ = robot.model.getpos();
+    currentQ = serialLinkModel.getpos();
 
     % Debugging: Print the current joint configuration
     disp('Current joint configuration:');
     disp(currentQ);
-
     % Calculate the end-effector pose using fkine
     try
-        currentPose = robot.model.fkine(currentQ);
+        currentPose = serialLinkModel.fkine(currentQ);
+        assert(isequal(size(currentPose), [4, 4]), 'Invalid fkine result.');
     catch ME
         disp('Error calculating fkine:');
         disp(ME.message);
-        return;  % Exit if fkine fails
+        return;
     end
 
-    % Verify that the returned pose is a 4x4 matrix
-    if ~isequal(size(currentPose), [4, 4])
-        error('fkine did not return a valid 4x4 transformation matrix.');
-    end
-
-    % Extract the translation component
-    T = currentPose(1:3, 4);
-
-    % Apply the delta translation
-    newT = T + delta(:);
-
-    % Update the transformation matrix with the new translation
+    % Apply the delta translation to the end-effector position
+    newT = currentPose(1:3, 4) + delta(:);
     newPose = currentPose;
     newPose(1:3, 4) = newT;
 
-    % Calculate the joint angles for the new pose using inverse kinematics
-    newQ = robot.model.ikcon(newPose, currentQ);
+    % Use inverse kinematics to get the new joint angles
+    newQ = serialLinkModel.ikcon(newPose, currentQ);
 
     % Animate the robot to the new configuration
-    robot.model.animate(newQ);
-    drawnow;  % Refresh the plot
+    serialLinkModel.animate(newQ);
+    drawnow;
 end
+
+
+
 
 
 
