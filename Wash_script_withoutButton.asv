@@ -647,7 +647,7 @@ for m=1:steps
         Y_transformed = reshape(transformedPoints(2, :), size(Y));
         Z_transformed = reshape(transformedPoints(3, :), size(Z));
         % Update the plot (refresh each ellipsoid to its new position)
-        ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0, 'EdgeColor', 'none', 'FaceColor','none');
+        ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
         % Using GetAlgebraicDist find how many points are inside each ellipsoid
         % Use `collisionCheck` for each object mesh
         pointsInsideCountWall = collisionCheck(rectPointsWall, centerPoint, radii, 'Wall', i, tr);
@@ -679,7 +679,7 @@ for m=1:steps
         Y_transformed = reshape(transformedPoints(2, :), size(Y));
         Z_transformed = reshape(transformedPoints(3, :), size(Z));
         % Update the plot (refresh each ellipsoid to its new position)
-        ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0, 'EdgeColor', 'none', 'FaceColor','none');
+        ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
         % Using GetAlgebraicDist find how many points are inside each ellipsoid
         % Use `collisionCheck` for each object mesh
         pointsInsideCountWall = collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
