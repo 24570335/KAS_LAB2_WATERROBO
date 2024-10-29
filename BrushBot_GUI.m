@@ -49,12 +49,19 @@ end
             'Value', 0, ...
             'ValueChangedFcn', @(sld, ~)update_joint(i, sld.Value));
     end
+    % Teach Label
+    uilabel(fig, 'Position', [67 150 200 20], 'Text', 'Enable Teach');
 
     % Add a button to enable the "teach" mode
-    uibutton(fig, 'Position', [50 600 100 40], 'Text', 'Teach Mode', ...
+    uibutton(fig, 'Position', [50 100 100 40], 'Text', 'Teach Mode', ...
         'ButtonPushedFcn', @(~,~)activate_teach_mode());
+    
+    % Joint Configuration Label
+    uilabel(fig, 'Position', [220 610 200 20], 'Text', 'Joint Configuration Controls (π)');
 
-
+    % D-Pad Label
+    uilabel(fig, 'Position', [220 200 200 20], 'Text', 'Directional Controls');
+   
     % Place D-Pad Style Controls below the sliders
     uibutton(fig, 'Position', [240 150 60 40], 'Text', 'Up', ...
         'ButtonPushedFcn', @(~,~)move_robot('up'));
@@ -68,25 +75,25 @@ end
     uibutton(fig, 'Position', [300 100 60 40], 'Text', 'Right', ...
         'ButtonPushedFcn', @(~,~)move_robot('right'));
 
-    % Cartesian Movement Controls
-    uilabel(fig, 'Position', [550 500 200 20], 'Text', 'Cartesian Controls');
+    % Cartesian Movement Controls Label
+    uilabel(fig, 'Position', [460 250 200 20], 'Text', 'Cartesian Controls');
 
     % X-axis Control
-    uibutton(fig, 'Position', [550 450 100 40], 'Text', '+X', ...
+    uibutton(fig, 'Position', [410 200 100 40], 'Text', '+X', ...
         'ButtonPushedFcn', @(~,~)move_cartesian([0.05, 0, 0]));
-    uibutton(fig, 'Position', [660 450 100 40], 'Text', '-X', ...
+    uibutton(fig, 'Position', [520 200 100 40], 'Text', '-X', ...
         'ButtonPushedFcn', @(~,~)move_cartesian([-0.05, 0, 0]));
 
     % Y-axis Control
-    uibutton(fig, 'Position', [550 400 100 40], 'Text', '+Y', ...
+    uibutton(fig, 'Position', [410 150 100 40], 'Text', '+Y', ...
         'ButtonPushedFcn', @(~,~)move_cartesian([0, 0.05, 0]));
-    uibutton(fig, 'Position', [660 400 100 40], 'Text', '-Y', ...
+    uibutton(fig, 'Position', [520 150 100 40], 'Text', '-Y', ...
         'ButtonPushedFcn', @(~,~)move_cartesian([0, -0.05, 0]));
 
     % Z-axis Control
-    uibutton(fig, 'Position', [550 350 100 40], 'Text', '+Z', ...
+    uibutton(fig, 'Position', [410 100 100 40], 'Text', '+Z', ...
         'ButtonPushedFcn', @(~,~)move_cartesian([0, 0, 0.05]));
-    uibutton(fig, 'Position', [660 350 100 40], 'Text', '-Z', ...
+    uibutton(fig, 'Position', [520 100 100 40], 'Text', '-Z', ...
         'ButtonPushedFcn', @(~,~)move_cartesian([0, 0, -0.05]));
 
     % Helper Functions
@@ -160,9 +167,6 @@ end
     % Get the current joint configuration
     currentQ = serialLinkModel.getpos();
 
-    % Debugging: Print the current joint configuration
-    disp('Current joint configuration:');
-    disp(currentQ);
     % Calculate the end-effector pose using fkine
     try
         currentPose = serialLinkModel.fkine(currentQ);
