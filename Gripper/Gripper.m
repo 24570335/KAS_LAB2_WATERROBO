@@ -21,8 +21,8 @@ classdef Gripper < RobotBaseClass
             end
           
             self.CreateModel();
-            self.model.base = self.model.base.T;% * transl(0.19,1.40,0.99) * trotz(pi/2);
-            self.model.base = self.model.base.T * transl(0.17,1.6,0.99) * trotz(-pi/2);
+            % self.model.base = self.model.base.T;% * transl(0.19,1.40,0.99) * trotz(pi/2);
+            self.model.base = self.model.base.T * baseTr * transl(0.17,1.6,0.99) * trotz(-pi/2);
             self.model.tool = self.toolTr;
             self.PlotAndColourRobot();
             drawnow
@@ -30,11 +30,13 @@ classdef Gripper < RobotBaseClass
         
         %% CreateModel
         function CreateModel(self)
+            link(1) = Link('d', 0,    'a',0,      'alpha', pi/2 ,'offset',0,'qlim',[deg2rad(-360),deg2rad(360)]);
+
+            link(2) = Link([0     0       0       pi    1]);
+            link(2).qlim = [0 0.2];
             
-            link(1) = Link([0     0       0       0    1]);
-            link(1).qlim = [0 0.2];
-            link(2) = Link([0     0       0       0    1]);
-            link(2).qlim = [0 -0.2];
+            link(3) = Link([0     0       0       0    1]);
+            link(3).qlim = [0.2 0.4]; 
 
             %this does not work as it says arrays have incompatible sizes.
             %issue in robotBaseClass - PlotAndColourRobot
