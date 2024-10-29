@@ -2,7 +2,10 @@
 clf;
 hold on;
 robot = BrushBot;
+r = UR3e_adjusted;
 robot.model.plot3d([0, 0, 0, 0, 0]); % Plot the robot in its initial position
+r.model.plot3d([0,0,0,0,0,0]);
+robot.model.n;
 drawnow();
 
 % Define radii for each link’s ellipsoid
@@ -11,7 +14,7 @@ radiiList = [
     0.16, 0.09, 0.09; % Link 2
     0.14, 0.09, 0.09; % Link 3
     0.2, 0.09, 0.1; % Link 4
-    0.03, 0.03, 0.03  % Link 5
+ %   0.03, 0.03, 0.03  % Link 5
 ];
 
 % Set axis limits to avoid auto-scaling
@@ -23,17 +26,17 @@ camva(10); % Adjust zoom level
 
 % Initialize transformation matrices and joint configuration
 q = [0, 0, 0, 0, 0]; % Initial joint configuration
-tr = zeros(4, 4, robot.model.n + 1);
+tr = zeros(4, 4, 5);
 tr(:,:,1) = robot.model.base;
 L = robot.model.links;
 
 % Calculate transformations for each link
-for i = 1:robot.model.n
+for i = 1:4
     tr(:,:,i+1) = tr(:,:,i) * trotz(q(i)) * transl(0, 0, L(i).d) * transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
 end
 centerPoint = [0,0,0];
 % Plot each ellipsoid at each link
-for i = 1:robot.model.n
+for i = 1:4
     radii = radiiList(i, :);
     [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
     transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))]; %used to make homogenous matrix, be able to transform all points in one go (list)
@@ -43,6 +46,7 @@ for i = 1:robot.model.n
     surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
 end
 
+%{
 % Optional: Add teach panel for interactive control
 %robot.model.teach;
 
@@ -106,6 +110,7 @@ end
         break;  % Stop checking further once a collision is detected
     end
 end
+    %}
 %}
 
 

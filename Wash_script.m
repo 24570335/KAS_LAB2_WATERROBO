@@ -3,12 +3,12 @@
 hold on
 kitchenEnvironment;
 
-%Loading bottle body and cap:
+%% Loading bottle body and cap:
 % Setting up BOTTLE BODY and applying transformations
 bottleBody = initialiseBottlePart('BottleBody3.ply', [-1.1, 1.1, 0.82]);
 bottleCap = initialiseBottlePart('BottleCap3.ply', [-1.1, 1.1, 1]);
 
-% Initialising robots and their movement waypoints / grippers
+%% Initialising robots and their movement waypoints / grippers
 r = UR3e_adjusted;
 waypointsUR3 = setupWaypointsUR3();
 br = BrushBot;
@@ -18,17 +18,15 @@ qopen = [0, 0.2, 0.4];
 qclose = [0, 0.1, 0.2];
 rawgrip = rawgripper;
 
-%% Creating ellipsoids on robot
+%% Creating ellipsoids on robot UR3
 % Initialising array to hold the ellipsoid surface handles for each link
 radiiList = setupRadiiList();
 ellipsoidHandles = gobjects(1, 5);  % Pre-allocate for 5 links
-
 % Initialize transformation matrices and joint configuration
 q0 = [0,0,0,0,0,0];
 tr = zeros(4, 4, r.model.n + 1);
 tr(:,:,1) = r.model.base;
 L = r.model.links;
-
 % Plot each ellipsoid at each link
 for i = 1:5
     tr(:,:,i+1) = tr(:,:,i) * trotz(q0(i)) * transl(0, 0, L(i).d) * transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
@@ -40,9 +38,32 @@ for i = 1:5
     Z_transformed = reshape(transformedPoints(3, :), size(Z));
     ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
 end
-
 for i = 1:5
     try delete(ellipsoidHandles(i)); end;
+end
+
+%% Creating ellipsoids on robot BrushBot
+% Initialising array to hold the ellipsoid surface handles for each link
+radiiListBr = setupRadiiListBr();
+ellipsoidHandlesBr = gobjects(1, 4);  % Pre-allocate for 4 links
+% Initialize transformation matrices and joint configuration
+q0 = [0,0,0,0,0,0];
+trBr = zeros(4, 4, 5);
+trBr(:,:,1) = br.model.base;
+LBr = br.model.links;
+% Plot each ellipsoid at each link
+for i = 1:4
+    trBr(:,:,i+1) = trBr(:,:,i) * trotz(q0(i)) * transl(0, 0, LBr(i).d) * transl(LBr(i).a/1.3, 0, 0) * trotx(LBr(i).alpha);
+    radiiBr = radiiListBr(i, :);
+    [X, Y, Z] = ellipsoid(-0.01, 0, 0, radiiBr(1), radiiBr(2), radiiBr(3));
+    transformedPoints = trBr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))]; %used to make homogenous matrix, be able to transform all points in one go (list)
+    X_transformed = reshape(transformedPoints(1, :), size(X));
+    Y_transformed = reshape(transformedPoints(2, :), size(Y));
+    Z_transformed = reshape(transformedPoints(3, :), size(Z));
+    ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+end
+for i = 1:4
+    try delete(ellipsoidHandlesBr(i)); end;
 end
 
 %% Creating mesh vertices to check collisions with
@@ -78,21 +99,20 @@ surf(Xa, Ya, Za,'FaceAlpha', 0.3, 'EdgeColor', 'none');
 rectPointsAlarm = [Xa(:), Ya(:), Za(:)];
 % Plot the rectangular prism's point cloud         
 rect_alarm = plot3(rectPointsAlarm(:,1), rectPointsAlarm(:,2), rectPointsAlarm(:,3), 'r.');
-%%
+
+%% Final intialisations for trajectory
 
 q0 = [0,0,0,0,0,0];
 q0_b = [0,0,0,0,0];
 steps = 25;
-
 qmatopen = jtraj(grip.model.getpos(), qopen, steps);
 qmatclose = jtraj(qopen,qclose,steps);
 
-% Moving UR3e to bottle
+%% Moving UR3e to bottle
 q1 = waypointsUR3(1,:);
 qMat = jtraj(q0, q1, steps);
 q1b = waypointsBR(1,:);
 qMatb= jtraj(q0_b,q1b,steps);
-
 for j=1:steps
     r.model.animate(qMat(j, :)) % Animating the movement to bottle
     rawgrip.model.base = r.model.fkine(qMat(j,:));
@@ -120,16 +140,39 @@ for j=1:steps
         Z_transformed = reshape(transformedPoints(3, :), size(Z));
         % Update the plot (refresh each ellipsoid to its new position)
         ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
-
         % Using GetAlgebraicDist find how many points are inside each ellipsoid
         % Use `collisionCheck` for each object mesh
         collisionCheck(rectPointsWall, centerPoint, radii, 'Wall', i, tr);
         collisionCheck(rectPointsTable, centerPoint, radii, 'Table', i, tr);
         collisionCheck(rectPointsAlarm, centerPoint, radii, 'Alarm', i, tr); 
     end
+
+    % Recalculate transformations for each link in BrushBot for each step
+    trBr(:,:,1) = br.model.base;
+    for i = 1:4
+        % Recalculate transformations for each link in UR3 for each step
+        trBr(:,:,i+1) = trBr(:,:,i) * trotz(qMatb(j, i)) * transl(0, 0, LBr(i).d) * transl(LBr(i).a/1.3, 0, 0) * trotx(LBr(i).alpha);
+        % Delete the previous ellipsoids if they exist
+        try delete(ellipsoidHandlesBr(i)); end;
+        radiiBr = radiiListBr(i, :);
+        % Extract the center point from the transformation matrix
+        centerPoint = trBr(1:3, 4, i+1)'; % Extract translation components as centerPoint
+        [X, Y, Z] = ellipsoid(-0.01, 0, 0, radiiBr(1), radiiBr(2), radiiBr(3));
+        % Apply updated transformation to the ellipsoid
+        transformedPoints = trBr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
+        X_transformed = reshape(transformedPoints(1, :), size(X));
+        Y_transformed = reshape(transformedPoints(2, :), size(Y));
+        Z_transformed = reshape(transformedPoints(3, :), size(Z));
+        % Update the plot (refresh each ellipsoid to its new position)
+        ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        % Using GetAlgebraicDist find how many points are inside each ellipsoid
+        % Use `collisionCheck` for each object mesh
+        collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
+        collisionCheck(rectPointsTable, centerPoint, radiiBr, 'Table', i, trBr);
+        collisionCheck(rectPointsAlarm, centerPoint, radiiBr, 'Alarm', i, trBr); 
+    end
     drawnow()
 end
-
 
 % Moving UR3e to sink
 q2 = waypointsUR3(2,:);
@@ -159,18 +202,14 @@ for k=1:steps
 
     % Recalculate transformations for each link in UR3 for each step
     tr(:,:,1) = r.model.base;
-    for i = 1:r.model.n
+    for i = 1:5
+        % Recalculate transformations for each link in UR3 for each step
         tr(:,:,i+1) = tr(:,:,i) * trotz(qMat(k, i)) * transl(0, 0, L(i).d) * transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
-    end
-
-    % Delete the previous ellipsoids if they exist
-    for i = 1:5
+        % Delete the previous ellipsoids if they exist
         try delete(ellipsoidHandles(i)); end;
-    end
-
-    % Update each ellipsoid position to match current link position
-    for i = 1:5
         radii = radiiList(i, :);
+        % Extract the center point from the transformation matrix
+        centerPoint = tr(1:3, 4, i+1)'; % Extract translation components as centerPoint
         [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
         % Apply updated transformation to the ellipsoid
         transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
@@ -179,8 +218,37 @@ for k=1:steps
         Z_transformed = reshape(transformedPoints(3, :), size(Z));
         % Update the plot (refresh each ellipsoid to its new position)
         ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        % Using GetAlgebraicDist find how many points are inside each ellipsoid
+        % Use `collisionCheck` for each object mesh
+        collisionCheck(rectPointsWall, centerPoint, radii, 'Wall', i, tr);
+        collisionCheck(rectPointsTable, centerPoint, radii, 'Table', i, tr);
+        collisionCheck(rectPointsAlarm, centerPoint, radii, 'Alarm', i, tr); 
     end
 
+    % Recalculate transformations for each link in BrushBot for each step
+    trBr(:,:,1) = br.model.base;
+    for i = 1:4
+        % Recalculate transformations for each link in UR3 for each step
+        trBr(:,:,i+1) = trBr(:,:,i) * trotz(qMatb(k, i)) * transl(0, 0, LBr(i).d) * transl(LBr(i).a/1.3, 0, 0) * trotx(LBr(i).alpha);
+        % Delete the previous ellipsoids if they exist
+        try delete(ellipsoidHandlesBr(i)); end;
+        radiiBr = radiiListBr(i, :);
+        % Extract the center point from the transformation matrix
+        centerPoint = trBr(1:3, 4, i+1)'; % Extract translation components as centerPoint
+        [X, Y, Z] = ellipsoid(-0.01, 0, 0, radiiBr(1), radiiBr(2), radiiBr(3));
+        % Apply updated transformation to the ellipsoid
+        transformedPoints = trBr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
+        X_transformed = reshape(transformedPoints(1, :), size(X));
+        Y_transformed = reshape(transformedPoints(2, :), size(Y));
+        Z_transformed = reshape(transformedPoints(3, :), size(Z));
+        % Update the plot (refresh each ellipsoid to its new position)
+        ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        % Using GetAlgebraicDist find how many points are inside each ellipsoid
+        % Use `collisionCheck` for each object mesh
+        collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
+        collisionCheck(rectPointsTable, centerPoint, radiiBr, 'Table', i, trBr);
+        collisionCheck(rectPointsAlarm, centerPoint, radiiBr, 'Alarm', i, trBr); 
+    end
 
     drawnow()
 end
@@ -244,8 +312,6 @@ end
 
 q2b = waypointsBR(2,:);
 qMatb = jtraj(q1b,q2b,longsteps);
-
-
 for p = 1:longsteps %return to wash
     r.model.animate(q2); % stay
     rawgrip.model.base = r.model.fkine(q2);
@@ -274,7 +340,6 @@ q3b = waypointsBR(3,:);
 qMatb= jtraj(q2b,q3b,steps);
 
 for l = 1:steps
-
     r.model.animate(qMat(l,:)); % Animating the movement of a tipping position
     rawgrip.model.base = r.model.fkine(qMat(l,:));
     rawgrip.model.animate([0,0,0]);
@@ -293,28 +358,52 @@ for l = 1:steps
 
     % Recalculate transformations for each link in UR3 for each step
     tr(:,:,1) = r.model.base;
-    for i = 1:r.model.n
+    for i = 1:5
+        % Recalculate transformations for each link in UR3 for each step
         tr(:,:,i+1) = tr(:,:,i) * trotz(qMat(l, i)) * transl(0, 0, L(i).d) * transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
-    end
-
-    % Delete the previous ellipsoids if they exist
-    for i = 1:5
+        % Delete the previous ellipsoids if they exist
         try delete(ellipsoidHandles(i)); end;
-    end
-
-    % Update each ellipsoid position to match current link position
-    for i = 1:5
         radii = radiiList(i, :);
+        % Extract the center point from the transformation matrix
+        centerPoint = tr(1:3, 4, i+1)'; % Extract translation components as centerPoint
         [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
-        
         % Apply updated transformation to the ellipsoid
         transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
         X_transformed = reshape(transformedPoints(1, :), size(X));
         Y_transformed = reshape(transformedPoints(2, :), size(Y));
         Z_transformed = reshape(transformedPoints(3, :), size(Z));
-        
         % Update the plot (refresh each ellipsoid to its new position)
         ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        % Using GetAlgebraicDist find how many points are inside each ellipsoid
+        % Use `collisionCheck` for each object mesh
+        collisionCheck(rectPointsWall, centerPoint, radii, 'Wall', i, tr);
+        collisionCheck(rectPointsTable, centerPoint, radii, 'Table', i, tr);
+        collisionCheck(rectPointsAlarm, centerPoint, radii, 'Alarm', i, tr); 
+    end
+
+    % Recalculate transformations for each link in BrushBot for each step
+    trBr(:,:,1) = br.model.base;
+    for i = 1:4
+        % Recalculate transformations for each link in UR3 for each step
+        trBr(:,:,i+1) = trBr(:,:,i) * trotz(qMatb(l, i)) * transl(0, 0, LBr(i).d) * transl(LBr(i).a/1.3, 0, 0) * trotx(LBr(i).alpha);
+        % Delete the previous ellipsoids if they exist
+        try delete(ellipsoidHandlesBr(i)); end;
+        radiiBr = radiiListBr(i, :);
+        % Extract the center point from the transformation matrix
+        centerPoint = trBr(1:3, 4, i+1)'; % Extract translation components as centerPoint
+        [X, Y, Z] = ellipsoid(-0.01, 0, 0, radiiBr(1), radiiBr(2), radiiBr(3));
+        % Apply updated transformation to the ellipsoid
+        transformedPoints = trBr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
+        X_transformed = reshape(transformedPoints(1, :), size(X));
+        Y_transformed = reshape(transformedPoints(2, :), size(Y));
+        Z_transformed = reshape(transformedPoints(3, :), size(Z));
+        % Update the plot (refresh each ellipsoid to its new position)
+        ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        % Using GetAlgebraicDist find how many points are inside each ellipsoid
+        % Use `collisionCheck` for each object mesh
+        collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
+        collisionCheck(rectPointsTable, centerPoint, radiiBr, 'Table', i, trBr);
+        collisionCheck(rectPointsAlarm, centerPoint, radiiBr, 'Alarm', i, trBr); 
     end
 
 
@@ -344,34 +433,60 @@ for m=1:steps
     
     % Recalculate transformations for each link in UR3 for each step
     tr(:,:,1) = r.model.base;
-    for i = 1:r.model.n
+    for i = 1:5
+        % Recalculate transformations for each link in UR3 for each step
         tr(:,:,i+1) = tr(:,:,i) * trotz(qMat(m, i)) * transl(0, 0, L(i).d) * transl(L(i).a/1.3, 0, 0) * trotx(L(i).alpha);
-    end
-
-    % Delete the previous ellipsoids if they exist
-    for i = 1:5
+        % Delete the previous ellipsoids if they exist
         try delete(ellipsoidHandles(i)); end;
-    end
-
-    % Update each ellipsoid position to match current link position
-    for i = 1:5
         radii = radiiList(i, :);
+        % Extract the center point from the transformation matrix
+        centerPoint = tr(1:3, 4, i+1)'; % Extract translation components as centerPoint
         [X, Y, Z] = ellipsoid(-0.01, 0, 0, radii(1), radii(2), radii(3));
-        
         % Apply updated transformation to the ellipsoid
         transformedPoints = tr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
         X_transformed = reshape(transformedPoints(1, :), size(X));
         Y_transformed = reshape(transformedPoints(2, :), size(Y));
         Z_transformed = reshape(transformedPoints(3, :), size(Z));
-        
         % Update the plot (refresh each ellipsoid to its new position)
         ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        % Using GetAlgebraicDist find how many points are inside each ellipsoid
+        % Use `collisionCheck` for each object mesh
+        collisionCheck(rectPointsWall, centerPoint, radii, 'Wall', i, tr);
+        collisionCheck(rectPointsTable, centerPoint, radii, 'Table', i, tr);
+        collisionCheck(rectPointsAlarm, centerPoint, radii, 'Alarm', i, tr); 
     end
 
+    % Recalculate transformations for each link in BrushBot for each step
+    trBr(:,:,1) = br.model.base;
+    for i = 1:4
+        % Recalculate transformations for each link in UR3 for each step
+        trBr(:,:,i+1) = trBr(:,:,i) * trotz(qMatb(m, i)) * transl(0, 0, LBr(i).d) * transl(LBr(i).a/1.3, 0, 0) * trotx(LBr(i).alpha);
+        % Delete the previous ellipsoids if they exist
+        try delete(ellipsoidHandlesBr(i)); end;
+        radiiBr = radiiListBr(i, :);
+        % Extract the center point from the transformation matrix
+        centerPoint = trBr(1:3, 4, i+1)'; % Extract translation components as centerPoint
+        [X, Y, Z] = ellipsoid(-0.01, 0, 0, radiiBr(1), radiiBr(2), radiiBr(3));
+        % Apply updated transformation to the ellipsoid
+        transformedPoints = trBr(:,:,i+1) * [X(:)'; Y(:)'; Z(:)'; ones(1, numel(X))];
+        X_transformed = reshape(transformedPoints(1, :), size(X));
+        Y_transformed = reshape(transformedPoints(2, :), size(Y));
+        Z_transformed = reshape(transformedPoints(3, :), size(Z));
+        % Update the plot (refresh each ellipsoid to its new position)
+        ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        % Using GetAlgebraicDist find how many points are inside each ellipsoid
+        % Use `collisionCheck` for each object mesh
+        collisionCheck(rectPointsWall, centerPoint, radiiBr, 'Wall', i, trBr);
+        collisionCheck(rectPointsTable, centerPoint, radiiBr, 'Table', i, trBr);
+        collisionCheck(rectPointsAlarm, centerPoint, radiiBr, 'Alarm', i, trBr); 
+    end
     drawnow()
 end
 
 
+
+
+%% EXTRA FUNCTIONS:
 % Function used for collision detection with mesh
 function algebraicDist = GetAlgebraicDist(points, centerPoint, radii)
 
@@ -414,6 +529,15 @@ function radiiList = setupRadiiList()
         0.14, 0.09, 0.09; % Link 3
         0.2, 0.09, 0.1;   % Link 4
         0.03, 0.03, 0.03  % Link 5
+    ];
+end
+
+function radiiListBr = setupRadiiListBr()
+    radiiListBr = [
+        0.1, 0.2, 0.1;   % Link 1
+        0.16, 0.09, 0.09; % Link 2
+        0.14, 0.09, 0.09; % Link 3
+        0.2, 0.09, 0.1;   % Link 4
     ];
 end
 
