@@ -100,24 +100,6 @@ rectPointsAlarm = [Xa(:), Ya(:), Za(:)];
 % Plot the rectangular prism's point cloud         
 rect_alarm = plot3(rectPointsAlarm(:,1), rectPointsAlarm(:,2), rectPointsAlarm(:,3), 'r.');
 
-%% Hardware eStop initialisation (more info in relevant script)
-% delete(serialportfind);
-% port_name = '/dev/cu.usbserial-14330';  % Adjust this if the port name is different
-% baud_rate = 9600;  % Match the baud rate with the Arduino code
-% serialObj = serialport(port_name, baud_rate);
-% configureTerminator(serialObj,"CR/LF");
-% flush(serialObj);
-% serialObj.UserData = struct("Data",[],"Count",1);
-% configureCallback(serialObj, "terminator", @(src, event) waitForButtonPress(src));
-delete(serialportfind);
-port_name = '/dev/cu.usbserial-14330';  % Adjust this if the port name is different
-baud_rate = 9600;  % Match the baud rate with the Arduino code
-serialObj = serialport(port_name, baud_rate);
-configureTerminator(serialObj, "CR/LF");
-flush(serialObj);
-serialObj.UserData = struct("Data", [], "Count", 1, "hardwareEstopPress", false);
-configureCallback(serialObj, "terminator", @(src, event) checkForEStop(src));
-
 %% Final intialisations for trajectory
 q0 = [0,0,0,0,0,0];
 q0_b = [0,0,0,0,0];
@@ -127,7 +109,6 @@ qmatclose = jtraj(qopen,qclose,steps);
 % Collision detection boolean
 collisionDetectedB = false;
 collisionDetectedBr = false;
-serialObj.UserData.hardwareEstopPress = false;
 
 %% Moving UR3e to bottle
 q1 = waypointsUR3(1,:);
@@ -135,13 +116,6 @@ qMat = jtraj(q0, q1, steps);
 q1b = waypointsBR(1,:);
 qMatb= jtraj(q0_b,q1b,steps);
 for j=1:steps
-    checkForEStop(serialObj);
-    % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
-
     r.model.animate(qMat(j, :)) % Animating the movement to bottle
     rawgrip.model.base = r.model.fkine(qMat(j,:));
     rawgrip.model.animate([0,0,0]);
@@ -226,11 +200,6 @@ qMatb = jtraj(q1b,q2b,steps);
 %qMatg = jtraj(q1b,q2b,steps)
 
 for k=1:steps
-    if hardwareEstopPress == true
-        disp("E-Stop has been pressed.");
-        return;
-    end
-
     r.model.animate(qMat(k,:)); % Animating the movement to sink
     rawgrip.model.base = r.model.fkine(qMat(k,:));
     rawgrip.model.animate([0,0,0]);
@@ -321,12 +290,6 @@ longsteps = 100;
 qmatspin = jtraj(qspin0,qspin1, longsteps);
 
 for n = 1:longsteps
-    checkForEStop(serialObj);
-    % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
     r.model.animate(q2); % stay
     rawgrip.model.base = r.model.fkine(q2);
     rawgrip.model.animate([0,0,0]);
@@ -337,12 +300,6 @@ end
 qMatb= jtraj(q2b,q3b,longsteps);
 
 for o = 1:longsteps
-    checkForEStop(serialObj);
-    % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
     r.model.animate(q2); % stay
     rawgrip.model.base = r.model.fkine(q2);
     rawgrip.model.animate([0,0,0]);
@@ -391,13 +348,6 @@ end
 qMatb= jtraj(q3b,q0_b,longsteps);
 
 for s = 1:longsteps
-    checkForEStop(serialObj);
-    % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
-
     r.model.animate(q2); % stay
     rawgrip.model.base = r.model.fkine(q2);
     rawgrip.model.animate([0,0,0]);
@@ -447,12 +397,6 @@ end
 qMatb= jtraj(q0_b,q1b,longsteps);
 
 for t = 1:longsteps
-    checkForEStop(serialObj);
-    % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
     r.model.animate(q2); % stay
     rawgrip.model.base = r.model.fkine(q2);
     rawgrip.model.animate([0,0,0]);
@@ -497,13 +441,6 @@ end
 q2b = waypointsBR(2,:);
 qMatb = jtraj(q1b,q2b,longsteps);
 for p = 1:longsteps %return to wash
-    checkForEStop(serialObj);
-    % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
-
     r.model.animate(q2); % stay
     rawgrip.model.base = r.model.fkine(q2);
     rawgrip.model.animate([0,0,0]);
@@ -547,12 +484,6 @@ end
 
 
 for q = 1:longsteps %clean
-    checkForEStop(serialObj);
-    % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
     r.model.animate(q2); % stay
     rawgrip.model.base = r.model.fkine(q2);
     rawgrip.model.animate([0,0,0]);
@@ -568,12 +499,6 @@ q3b = waypointsBR(3,:);
 qMatb= jtraj(q2b,q3b,steps);
 
 for l = 1:steps
-    checkForEStop(serialObj);
-    % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
     r.model.animate(qMat(l,:)); % Animating the movement of a tipping position
     rawgrip.model.base = r.model.fkine(qMat(l,:));
     rawgrip.model.animate([0,0,0]);
@@ -664,12 +589,6 @@ qMat = jtraj(q3,q4,steps);
 q4b = waypointsBR(4,:);
 qMatb= jtraj(q3b,q4b,steps);
 for m=1:steps
-    checkForEStop(serialObj);
-    % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
     r.model.animate(qMat(m,:)) % Animating the movement to dry bottle
     rawgrip.model.base = r.model.fkine(qMat(m,:));
     rawgrip.model.animate([0,0,0]);
@@ -829,27 +748,8 @@ function pointsInsideCount = collisionCheck(meshPoints, centerPoint, radii, obje
     %disp(['From ', objectName, ' there are ', num2str(numel(pointsInside)), ' points inside the ', num2str(linkIndex), 'th ellipsoid']);
 end
 
-function checkForEStop(serialObj)
-    if serialObj.NumBytesAvailable > 0  % Check if data is available
-        data = readline(serialObj);
-        if strcmp(data, 'Stop')
-            serialObj.UserData.hardwareEstopPress = true;
-            disp("Button Pressed: Emergency Stop Activated");
-        end
-    end
-end
 
-% function waitForButtonPress(src)
-%     % Read the ASCII data from the serialport object.
-%     data = readline(src);
-% 
-%     % Check if the data corresponds to a button press (in this case, "Stop").
-%     if strcmp(data, 'Stop')
-%         hardwareEstopPress = true;
-%         % Display that a button has been pressed
-%         %disp("Button Pressed");
-%     end
-% end
+
 %{
 function tr = updateEllipsoids(tr, qMat, stepIndex, ellipsoidHandles, radiiList, L)
     % Loop through each link and update the transformation and ellipsoid

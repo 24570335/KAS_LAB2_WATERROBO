@@ -26,9 +26,9 @@ classdef kitchenEnvironment < handle
             % Setting up table, person ply + safety fire extinguisher, emergency stop
             PlaceObject('table.ply',[-1,0.9,0.15]);
             PlaceObject('personFemaleBusiness.ply',[1.9,0.8,0]);
-            PlaceObject('fireExtinguisherElevated.ply',[0.6,1.2,0.45]);
+            PlaceObject('fireExtinguisherElevated.ply',[0.9,1.2,0.45]);
             PlaceObject('bookcaseTwoShelves0.5x0.2x0.5m.ply', [2,1.5,0]);
-            PlaceObject('emergencyStopButton.ply', [0.6,0.5,0]);
+            PlaceObject('emergencyStopButton.ply', [0.9,0.5,0]);
             
             % Fence placement parallel and rotated:
             PlaceObject('barrier1.5x0.2x1m.ply',[-0.4,-0.4,0]);
