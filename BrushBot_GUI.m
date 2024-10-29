@@ -15,23 +15,19 @@ function BrushBot_GUI
     % Set the base transformation matrix to place it at the origin (0, 0, 0)
     brushBot.model.base = transl(0, 0, 0);  % Set base at origin
 
-    % Set an initial joint configuration (natural position)
-    initialQ = zeros(1, brushBot.model.n);  % Adjust for the number of joints
-
     % Clear the figure to ensure only one plot is active
     clf;  % Clear the current figure
-
-    % Plot the robot in the initial configuration with a defined workspace
-    brushBot.model.plot(initialQ, 'workspace', [-1.5 1.5 -1.5 1.5 -1.5 1.5]);
+   
+    % Create a figure and axes for the robot plot
+    robotFig = figure('Name', 'Robot View', 'NumberTitle', 'off');
+    ax = axes('Parent', robotFig);  % Set 'ax' as the axes inside the figure
     
-    % Ensure the view is properly aligned
-    view(3);  % Set to 3D view
-    axis equal;  % Equal scaling along axes
+    % Set the axes context and plot the robot
+    axes(ax);  % Ensure 'ax' is the active axes for plotting
+    brushBot.model.plot(zeros(1, brushBot.model.n), 'workspace', [-1 1 -1 1 -1 1]);
 
-    
-
-    disp(brushBot.model);
-    disp('GUI and BrushBot initialized successfully.');
+disp(brushBot.model);
+disp('GUI and BrushBot initialized successfully.');
 
 if isempty(brushBot.model.links)
     error('Robot model is not initialized properly.');
@@ -81,20 +77,31 @@ end
     % X-axis Control
     uibutton(fig, 'Position', [410 200 100 40], 'Text', '+X', ...
         'ButtonPushedFcn', @(~,~)move_cartesian([0.05, 0, 0]));
+    set(findobj(fig, 'Text', '+X'), 'ButtonPushedFcn', @(~,~)move_cartesian([0.05, 0, 0]));
+
     uibutton(fig, 'Position', [520 200 100 40], 'Text', '-X', ...
         'ButtonPushedFcn', @(~,~)move_cartesian([-0.05, 0, 0]));
+    set(findobj(fig, 'Text', '-X'), 'ButtonPushedFcn', @(~,~)move_cartesian([-0.05, 0, 0]));
 
     % Y-axis Control
     uibutton(fig, 'Position', [410 150 100 40], 'Text', '+Y', ...
         'ButtonPushedFcn', @(~,~)move_cartesian([0, 0.05, 0]));
+    set(findobj(fig, 'Text', '+Y'), 'ButtonPushedFcn', @(~,~)move_cartesian([0, 0.05, 0]));
+
     uibutton(fig, 'Position', [520 150 100 40], 'Text', '-Y', ...
         'ButtonPushedFcn', @(~,~)move_cartesian([0, -0.05, 0]));
+    set(findobj(fig, 'Text', '-Y'), 'ButtonPushedFcn', @(~,~)move_cartesian([0, -0.05, 0]));
+
 
     % Z-axis Control
     uibutton(fig, 'Position', [410 100 100 40], 'Text', '+Z', ...
         'ButtonPushedFcn', @(~,~)move_cartesian([0, 0, 0.05]));
+    set(findobj(fig, 'Text', '+Z'), 'ButtonPushedFcn', @(~,~)move_cartesian([0, 0, 0.05]));
+
     uibutton(fig, 'Position', [520 100 100 40], 'Text', '-Z', ...
         'ButtonPushedFcn', @(~,~)move_cartesian([0, 0, -0.05]));
+    set(findobj(fig, 'Text', '-Z'), 'ButtonPushedFcn', @(~,~)move_cartesian([0, 0, -0.05]));
+
 
     % Helper Functions
 
@@ -144,53 +151,72 @@ end
         drawnow;  % Refresh the plot
     end
 
-    function move_cartesian(delta)
-    fig = gcf;  % Get the GUI figure handle
+%     function move_cartesian(delta)
+%     fig = gcf;  % Get the GUI figure handle
+% 
+%     % Print UserData to verify its content and type
+%     userData = fig.UserData;
+%     disp('UserData content:');
+%     disp(userData);
+%     disp('UserData type:');
+%     disp(class(userData));
+% 
+%     % Access the BrushBot object safely
+%     if isstruct(userData) && isfield(userData, 'robot')
+%         robot = userData.robot;  % Access the BrushBot instance
+%     else
+%         error('UserData is not properly set or does not contain the robot object.');
+%     end
+% 
+%     % Access the SerialLink model inside the BrushBot object
+%     serialLinkModel = robot.model;
+% 
+%     % Get the current joint configuration
+%     currentQ = serialLinkModel.getpos();
+% 
+%     % Calculate the end-effector pose using fkine
+%     try
+%         currentPose = serialLinkModel.fkine(currentQ);
+%         assert(isequal(size(currentPose), [4, 4]), 'Invalid fkine result.');
+%     catch ME
+%         disp('Error calculating fkine:');
+%         disp(ME.message);
+%         return;
+%     end
+% 
+%     % Apply the delta translation to the end-effector position
+%     newT = currentPose(1:3, 4) + delta(:);
+%     newPose = currentPose;
+%     newPose(1:3, 4) = newT;
+% 
+%     % Use inverse kinematics to get the new joint angles
+%     newQ = serialLinkModel.ikcon(newPose, currentQ);
+% 
+%     % Animate the robot to the new configuration
+%     serialLinkModel.animate(newQ);
+%     drawnow;
+% end
+function move_cartesian(delta)
+    % Access the robot object from the GUI figure's UserData
+    fig = gcf; % Current GUI figure
+    brushBot = fig.UserData.robot;
 
-    % Print UserData to verify its content and type
-    userData = fig.UserData;
-    disp('UserData content:');
-    disp(userData);
-    disp('UserData type:');
-    disp(class(userData));
+    % Get the current joint configuration and forward kinematics
+    currentQ = brushBot.model.getpos();  % Current joint positions
+    currentPose = brushBot.model.fkine(currentQ);  % Forward kinematics
 
-    % Access the BrushBot object safely
-    if isstruct(userData) && isfield(userData, 'robot')
-        robot = userData.robot;  % Access the BrushBot instance
-    else
-        error('UserData is not properly set or does not contain the robot object.');
-    end
+    % Calculate the new translation matrix
+    translationMatrix = transl(delta);  % Create a translation matrix
 
-    % Access the SerialLink model inside the BrushBot object
-    serialLinkModel = robot.model;
+    % Compute the new end-effector pose
+    newPose = currentPose * translationMatrix;
 
-    % Get the current joint configuration
-    currentQ = serialLinkModel.getpos();
+    % Use inverse kinematics to calculate the new joint configuration
+    newQ = brushBot.model.ikcon(newPose, currentQ);
 
-    % Calculate the end-effector pose using fkine
-    try
-        currentPose = serialLinkModel.fkine(currentQ);
-        assert(isequal(size(currentPose), [4, 4]), 'Invalid fkine result.');
-    catch ME
-        disp('Error calculating fkine:');
-        disp(ME.message);
-        return;
-    end
-
-    % Apply the delta translation to the end-effector position
-    newT = currentPose(1:3, 4) + delta(:);
-    newPose = currentPose;
-    newPose(1:3, 4) = newT;
-
-    % Use inverse kinematics to get the new joint angles
-    newQ = serialLinkModel.ikcon(newPose, currentQ);
-
-    % Animate the robot to the new configuration
-    serialLinkModel.animate(newQ);
-    drawnow;
+    % Update the robot's joint configuration
+    brushBot.model.animate(newQ);
 end
-
-
 
 
 
