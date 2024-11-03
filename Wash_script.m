@@ -70,7 +70,7 @@ end
 % Create a rectangular wall mesh
 [Xw, Zw] = meshgrid(-4:0.05:4, -5:0.05:5); % Different ranges for X and Z for a rectangle
 sizeMat = size(Xw);
-Yw = repmat(2, sizeMat(1), sizeMat(2)); % Y plane remains constant
+Yw = repmat(1.4, sizeMat(1), sizeMat(2)); % Y plane remains constant
 % Plot one side of the rectangle as a surface
 surf(Xw, Yw, Zw,'FaceAlpha', 0.3, 'EdgeColor', 'none');
 % Combine one surface as a point cloud
@@ -110,7 +110,7 @@ rect_alarm = plot3(rectPointsAlarm(:,1), rectPointsAlarm(:,2), rectPointsAlarm(:
 % serialObj.UserData = struct("Data",[],"Count",1);
 % configureCallback(serialObj, "terminator", @(src, event) waitForButtonPress(src));
 delete(serialportfind);
-port_name = '/dev/cu.usbserial-14330';  % Adjust this if the port name is different
+port_name = '/dev/cu.usbserial-14320';  % Adjust this if the port name is different
 baud_rate = 9600;  % Match the baud rate with the Arduino code
 serialObj = serialport(port_name, baud_rate);
 configureTerminator(serialObj, "CR/LF");
