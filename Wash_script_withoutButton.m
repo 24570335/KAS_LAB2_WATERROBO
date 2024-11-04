@@ -120,6 +120,9 @@ initialTransformW = transl(initialPositionW)*trotz(pi/2);
 transformedVertsW = (initialTransformW * vertsHomogeneousWoman')';
 set(woman,'Vertices',transformedVertsW(:,1:3));
 
+%% Set empty cubePoints, for in case it is randomly generated
+cubePoints = [];
+
 %% Final intialisations for trajectory
 q0 = [0,0,0,0,0,0];
 q0_b = [0,0,0,0,0];
@@ -144,6 +147,7 @@ for j=1:steps
     grip.model.base = br.model.fkine(qMatb(j,:));
     grip.model.animate([0,0,0]);
 
+    %{
     %% Lightwall sensor detection
     simulateWomanWalkIntoLightCurtain(steps, j, vertsHomogeneousWoman, woman);
 
@@ -153,6 +157,8 @@ for j=1:steps
     if detectCollisionWithLightCurtain(transformedWVerts, rectPointsLightW)
         return; % Stop movement when woman collides into mesh wall
     end
+    %}
+
 
     %% Recalculate transformations for each link in UR3 for each step
     tr(:,:,1) = r.model.base;
@@ -162,8 +168,8 @@ for j=1:steps
         try delete(ellipsoidHandles(i)); end;
         ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'FaceColor', 'b');
 
-        % Call the checkCollisions function
-        collisionDetectedB = checkCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, centerPoint, radiiBr, i, tr);
+        % Call the checkStandardCollisions function
+        collisionDetectedB = checkStandardCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, cubePoints, centerPoint, radiiBr, i, tr);
         % If collision detected, exit
         if collisionDetectedB
             disp('Collision detected.');
@@ -180,8 +186,8 @@ for j=1:steps
         try delete(ellipsoidHandlesBr(i)); end;
         ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'FaceColor', 'b');
         
-        % Call the checkCollisions function
-        collisionDetectedBr = checkCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, centerPoint, radiiBr, i, trBr);
+        % Call the checkStandardCollisions function
+        collisionDetectedBr = checkStandardCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, cubePoints, centerPoint, radiiBr, i, trBr);
         % If collision detected, exit
         if collisionDetectedBr
             disp('Collision detected.');
@@ -216,29 +222,10 @@ for k=1:steps
     grip.model.animate([0,0,0]);
 
     %{
-    %% Mesh cube 'randomly' appears - I have put it here, it can go anywhere:
-    % One side of the cube
-    [Y,Z] = meshgrid(-0.25:0.05:0.25,-0.25:0.05:0.25);
-    sizeMat = size(Y);
-    X = repmat(0.25,sizeMat(1),sizeMat(2));
-    oneSideOfCube_h = surf(X,Y,Z);
-    
-    % Combine one surface as a point cloud
-    cubePoints = [X(:),Y(:),Z(:)];
-
-    % Make a cube by rotating the single side by 0,90,180,270, and around y to make the top and bottom faces
-    cubePoints = [ cubePoints ...
-                 ; cubePoints * rotz(pi/2)...
-                 ; cubePoints * rotz(pi) ...
-                 ; cubePoints * rotz(3*pi/2) ...
-                 ; cubePoints * roty(pi/2) ...
-                 ; cubePoints * roty(-pi/2)];         
-             
-    % Plot the cube's point cloud         
-    cubePoints = cubePoints + repmat([-1,1.2,1],size(cubePoints,1),1);
-    cube_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'b.');
+    %% Generating a random cube! Placing it here bc why not...
+    [cubePoints] = generatingCubeMesh();
     %}
-
+    
     % Recalculate transformations for each link in UR3 for each step
     tr(:,:,1) = r.model.base;
     for i = 1:5
@@ -247,8 +234,8 @@ for k=1:steps
         try delete(ellipsoidHandles(i)); end;
         ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'FaceColor', 'b');
         
-        % Call the checkCollisions function
-        collisionDetected = checkCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, centerPoint, radiiBr, i, tr);
+        % Call the checkStandardCollisions function
+        collisionDetected = checkStandardCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, cubePoints, centerPoint, radiiBr, i, tr);
         % If collision detected, exit
         if collisionDetected
             disp('Collision detected.');
@@ -264,8 +251,8 @@ for k=1:steps
         try delete(ellipsoidHandlesBr(i)); end;
         ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'FaceColor', 'b');
         
-        % Call the checkCollisions function
-        collisionDetectedBr = checkCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, centerPoint, radiiBr, i, trBr);
+        % Call the checkStandardCollisions function
+        collisionDetectedBr = checkStandardCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, cubePoints, centerPoint, radiiBr, i, trBr);
         % If collision detected, exit
         if collisionDetectedBr
             disp('Collision detected.');
@@ -311,13 +298,14 @@ for o = 1:longsteps
         try delete(ellipsoidHandlesBr(i)); end;
         ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'FaceColor', 'b');
         
-        % Call the checkCollisions function
-        collisionDetectedBr = checkCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, centerPoint, radiiBr, i, trBr);
+        % Call the checkStandardCollisions function
+        collisionDetectedBr = checkStandardCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, cubePoints, centerPoint, radiiBr, i, trBr);
         % If collision detected, exit
         if collisionDetectedBr
             disp('Collision detected.');
             return;
         end
+
     end
     drawnow
 end
@@ -346,8 +334,8 @@ for s = 1:longsteps
         try delete(ellipsoidHandlesBr(i)); end;
         ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'FaceColor', 'b');
         
-        % Call the checkCollisions function
-        collisionDetectedBr = checkCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, centerPoint, radiiBr, i, trBr);
+        % Call the checkStandardCollisions function
+        collisionDetectedBr = checkStandardCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, cubePoints, centerPoint, radiiBr, i, trBr);
         % If collision detected, exit
         if collisionDetectedBr
             disp('Collision detected.');
@@ -375,8 +363,8 @@ for t = 1:longsteps
         try delete(ellipsoidHandlesBr(i)); end;
         ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'FaceColor', 'b');
         
-        % Call the checkCollisions function
-        collisionDetectedBr = checkCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, centerPoint, radiiBr, i, trBr);
+        % Call the checkStandardCollisions function
+        collisionDetectedBr = checkStandardCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, cubePoints, centerPoint, radiiBr, i, trBr);
         % If collision detected, exit
         if collisionDetectedBr
             disp('Collision detected.');
@@ -404,8 +392,8 @@ for p = 1:longsteps %return to wash
         try delete(ellipsoidHandlesBr(i)); end;
         ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'FaceColor', 'b');
         
-        % Call the checkCollisions function
-        collisionDetectedBr = checkCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, centerPoint, radiiBr, i, trBr);
+        % Call the checkStandardCollisions function
+        collisionDetectedBr = checkStandardCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, cubePoints, centerPoint, radiiBr, i, trBr);
         % If collision detected, exit
         if collisionDetectedBr
             disp('Collision detected.');
@@ -452,8 +440,8 @@ for l = 1:steps
         try delete(ellipsoidHandles(i)); end;
         ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'FaceColor', 'b');
 
-        % Call the checkCollisions function
-        collisionDetectedB = checkCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, centerPoint, radiiBr, i, tr);
+        % Call the checkStandardCollisions function
+        collisionDetectedB = checkStandardCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, cubePoints, centerPoint, radiiBr, i, tr);
         % If collision detected, exit
         if collisionDetectedB
             disp('Collision detected.');
@@ -469,8 +457,8 @@ for l = 1:steps
         try delete(ellipsoidHandlesBr(i)); end;
         ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'FaceColor', 'b');
         
-        % Call the checkCollisions function
-        collisionDetectedBr = checkCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, centerPoint, radiiBr, i, trBr);
+        % Call the checkStandardCollisions function
+        collisionDetectedBr = checkStandardCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, cubePoints, centerPoint, radiiBr, i, trBr);
     end
 
 
@@ -502,8 +490,8 @@ for m=1:steps
         try delete(ellipsoidHandles(i)); end;
         ellipsoidHandles(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'FaceColor', 'b');
 
-        % Call the checkCollisions function
-        collisionDetectedB = checkCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, centerPoint, radiiBr, i, tr);
+        % Call the checkStandardCollisions function
+        collisionDetectedB = checkStandardCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, cubePoints, centerPoint, radiiBr, i, tr);
         % If collision detected, exit
         if collisionDetectedB
             disp('Collision detected.');
@@ -519,8 +507,8 @@ for m=1:steps
         try delete(ellipsoidHandlesBr(i)); end;
         ellipsoidHandlesBr(i) = surf(X_transformed, Y_transformed, Z_transformed, 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'FaceColor', 'b');
         
-        % Call the checkCollisions function
-        collisionDetectedBr = checkCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, centerPoint, radiiBr, i, trBr);
+        % Call the checkStandardCollisions function
+        collisionDetectedBr = checkStandardCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, cubePoints, centerPoint, radiiBr, i, trBr);
         % If collision detected, exit
         if collisionDetectedBr
             disp('Collision detected.');
@@ -529,6 +517,9 @@ for m=1:steps
     end
     drawnow()
 end
+
+
+
 
 
 
@@ -626,23 +617,27 @@ function [radiiBr, centerPoint, X_transformed, Y_transformed, Z_transformed] = u
 end
 
 % checking for collisions with adjustable threshold values here:
-function collisionDetected = checkCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, centerPoint, radii, linkIndex, tr)
+function collisionDetected = checkStandardCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, cubePoints, centerPoint, radii, linkIndex, tr)
     % Perform collision checks with each object
+
+    if isempty(cubePoints)
+        pointsInsideCountCube = 0;
+    else
+        pointsInsideCountCube = collisionCheck(cubePoints, centerPoint, radii, 'Cube', linkIndex, tr);
+    end
+
     pointsInsideCountWall = collisionCheck(rectPointsWall, centerPoint, radii, 'Wall', linkIndex, tr);
     pointsInsideCountTable = collisionCheck(rectPointsTable, centerPoint, radii, 'Table', linkIndex, tr);
     pointsInsideCountAlarm = collisionCheck(rectPointsAlarm, centerPoint, radii, 'Alarm', linkIndex, tr);
 
     % Check thresholds for each object to determine collision
-    if pointsInsideCountWall > 1 || pointsInsideCountTable > 6 || pointsInsideCountAlarm > 1
+    if pointsInsideCountWall > 1 || pointsInsideCountTable > 6 || pointsInsideCountAlarm > 1 || pointsInsideCountCube > 0
         collisionDetected = true;
     else
         collisionDetected = false;
     end
 end
 
-function testLightWall()
-    disp('test');
-end
 
 function simulateWomanWalkIntoLightCurtain(steps, index, vertsHomogeneousWoman, woman)
     initialWLocation = [1.9,0.8,0];
@@ -668,4 +663,28 @@ function collisionDetected = detectCollisionWithLightCurtain(womanVerts, lightCu
             return; % Exit once a collision is detected
         end
     end
+end
+
+% Mesh cube 'randomly' appears it can be called anywhere:
+function [cubePoints] = generatingCubeMesh()
+    % One side of the cube
+    [Y,Z] = meshgrid(-0.25:0.05:0.25,-0.25:0.05:0.25);
+    sizeMat = size(Y);
+    X = repmat(0.25,sizeMat(1),sizeMat(2));
+    oneSideOfCube_h = surf(X,Y,Z);
+    
+    % Combine one surface as a point cloud
+    cubePoints = [X(:),Y(:),Z(:)];
+
+    % Make a cube by rotating the single side by 0,90,180,270, and around y to make the top and bottom faces
+    cubePoints = [ cubePoints ...
+                 ; cubePoints * rotz(pi/2)...
+                 ; cubePoints * rotz(pi) ...
+                 ; cubePoints * rotz(3*pi/2) ...
+                 ; cubePoints * roty(pi/2) ...
+                 ; cubePoints * roty(-pi/2)];         
+             
+    % Plot the cube's point cloud         
+    cubePoints = cubePoints + repmat([-1,1.2,1],size(cubePoints,1),1);
+    cube_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'b.');
 end
