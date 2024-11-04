@@ -100,6 +100,26 @@ rectPointsAlarm = [Xa(:), Ya(:), Za(:)];
 % Plot the rectangular prism's point cloud         
 rect_alarm = plot3(rectPointsAlarm(:,1), rectPointsAlarm(:,2), rectPointsAlarm(:,3), 'r.', 'Visible', 'off');
 
+% Create a rectangular lightwall sensor mesh
+[Yl, Zl] = meshgrid(-2:0.05:2, 0:0.05:5); % Different ranges for X and Z for a rectangle
+sizeMat = size(Yl);
+Xl = repmat(0.6, sizeMat(1), sizeMat(2)); % Y plane remains constant
+% Plot one side of the rectangle as a surface
+surf(Xl, Yl, Zl, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+% Combine one surface as a point cloud
+rectPointsLightW = [Xl(:), Yl(:), Zl(:)];
+% Plot the rectangular prism's point cloud         
+rect_lightW = plot3(rectPointsLightW(:,1), rectPointsLightW(:,2), rectPointsLightW(:,3), 'b.');
+
+%% Setting up female worker / tester:
+woman = PlaceObject('personFemaleBusiness.ply'); % woman 
+vertsWoman = get(woman,'Vertices');
+vertsHomogeneousWoman = [vertsWoman, ones(size(vertsWoman, 1), 1)];
+initialPositionW = [1.9,0.8,0];  % Updated y position
+initialTransformW = transl(initialPositionW)*trotz(pi/2);
+transformedVertsW = (initialTransformW * vertsHomogeneousWoman')';
+set(woman,'Vertices',transformedVertsW(:,1:3));
+
 %% Final intialisations for trajectory
 q0 = [0,0,0,0,0,0];
 q0_b = [0,0,0,0,0];
@@ -123,9 +143,18 @@ for j=1:steps
     br.model.animate(qMatb(j,:))
     grip.model.base = br.model.fkine(qMatb(j,:));
     grip.model.animate([0,0,0]);
-    % grip.model.animate(qmatopen(j,:))
 
-    % Recalculate transformations for each link in UR3 for each step
+    %% Lightwall sensor detection
+    simulateWomanWalkIntoLightCurtain(steps, j, vertsHomogeneousWoman, woman);
+
+    transformedWVerts = get(woman, 'Vertices');
+    
+    % Check for collision with the light curtain
+    if detectCollisionWithLightCurtain(transformedWVerts, rectPointsLightW)
+        return; % Stop movement when woman collides into mesh wall
+    end
+
+    %% Recalculate transformations for each link in UR3 for each step
     tr(:,:,1) = r.model.base;
     for i = 1:5
         tr(:,:,i+1) = tr(:,:,i) * trotz(qMat(j, i)) * transl(0, 0, L(i).d) * transl(L(i).a / 1.3, 0, 0) * trotx(L(i).alpha);
@@ -167,7 +196,6 @@ q2 = waypointsUR3(2,:);
 qMat = jtraj(q1,q2,steps);
 q2b = waypointsBR(2,:);
 qMatb = jtraj(q1b,q2b,steps);
-%qMatg = jtraj(q1b,q2b,steps)
 
 for k=1:steps
     r.model.animate(qMat(k,:)); % Animating the movement to sink
@@ -186,10 +214,9 @@ for k=1:steps
 
     grip.model.base = br.model.fkine(qMatb(k,:));
     grip.model.animate([0,0,0]);
-    %grip.model.animate(qMatg(k, :)); % Animating the movement to sink
 
     %{
-    % Mesh cube appears:
+    %% Mesh cube 'randomly' appears - I have put it here, it can go anywhere:
     % One side of the cube
     [Y,Z] = meshgrid(-0.25:0.05:0.25,-0.25:0.05:0.25);
     sizeMat = size(Y);
@@ -208,8 +235,7 @@ for k=1:steps
                  ; cubePoints * roty(-pi/2)];         
              
     % Plot the cube's point cloud         
-    cubeAtOigin_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'r.');
-    cubePoints = cubePoints + repmat([-0.5,1.5,2],size(cubePoints,1),1);
+    cubePoints = cubePoints + repmat([-1,1.2,1],size(cubePoints,1),1);
     cube_h = plot3(cubePoints(:,1),cubePoints(:,2),cubePoints(:,3),'b.');
     %}
 
@@ -304,6 +330,7 @@ for s = 1:longsteps
     rawgrip.model.animate([0,0,0]);
     grip.model.base = br.model.fkine(qMatb(s,:)); %put cap away2
     grip.model.animate([4*pi/3,0,0]);
+    
     lastLinkCap = br.model.fkine(qMatb(s,:));
     lastLinkCap = lastLinkCap.T * transl(0,0,0.1);
     transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
@@ -444,11 +471,6 @@ for l = 1:steps
         
         % Call the checkCollisions function
         collisionDetectedBr = checkCollisions(rectPointsWall, rectPointsTable, rectPointsAlarm, centerPoint, radiiBr, i, trBr);
-        % If collision detected, exit
-        if collisionDetectedBr
-            disp('Collision detected.');
-            return;
-        end
     end
 
 
@@ -615,5 +637,35 @@ function collisionDetected = checkCollisions(rectPointsWall, rectPointsTable, re
         collisionDetected = true;
     else
         collisionDetected = false;
+    end
+end
+
+function testLightWall()
+    disp('test');
+end
+
+function simulateWomanWalkIntoLightCurtain(steps, index, vertsHomogeneousWoman, woman)
+    initialWLocation = [1.9,0.8,0];
+    finalWLocation = [0.4,0.8,0];
+    stepIncrement = (finalWLocation - initialWLocation)/steps;
+
+    currentWLocation = initialWLocation + index * stepIncrement;
+    transformW = transl(currentWLocation) * trotz(pi/2);
+    transformedVertsW = (transformW * vertsHomogeneousWoman')';
+    set(woman, 'Vertices', transformedVertsW(:, 1:3));  % Update woman's position        
+end
+
+function collisionDetected = detectCollisionWithLightCurtain(womanVerts, lightCurtainVerts)
+    % Calculate distances between each woman's vertex and all light curtain vertices
+    collisionDetected = false;
+    for i = 1:size(womanVerts, 1)
+        distances = sqrt(sum((lightCurtainVerts - womanVerts(i, :)).^2, 2));
+        
+        % Check if any distance is below the collision threshold
+        if any(distances < 0.01)
+            collisionDetected = true;
+            disp('Collision detected. Light curtain activated.');
+            return; % Exit once a collision is detected
+        end
     end
 end
