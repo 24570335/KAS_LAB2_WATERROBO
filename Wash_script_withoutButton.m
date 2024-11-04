@@ -6,7 +6,7 @@ kitchenEnvironment;
 %% Loading bottle body and cap:
 % Setting up BOTTLE BODY and applying transformations
 [bottleBody, vertsHomogeneousBody] = initialiseBottlePart('BottleBody3.ply', [-1.1, 1.1, 0.82]);
-[bottleCap, vertsHomogeneousBody] = initialiseBottlePart('BottleCap3.ply', [-1.1, 1.1, 1]);
+[bottleCap, vertsHomogeneousCap] = initialiseBottlePart('BottleCap3.ply', [-1.1, 1.1, 1]);
 
 %% Initialising robots and their movement waypoints / grippers
 r = UR3e_adjusted;
@@ -207,6 +207,7 @@ for k=1:steps
     r.model.animate(qMat(k,:)); % Animating the movement to sink
     rawgrip.model.base = r.model.fkine(qMat(k,:));
     rawgrip.model.animate([0,0,0]);
+
     lastLinkBody = r.model.fkine(qMat(k,:));
     transformedVertsBody = (lastLinkBody.T * vertsHomogeneousBody')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleBody, 'Vertices', transformedVertsBody(:, 1:3));
@@ -215,7 +216,8 @@ for k=1:steps
     lastLinkCap = lastLinkCap.T * transl(0, 0.18, 0);
     transformedVertsCap = (lastLinkCap * vertsHomogeneousCap')'; % Multiplying new transform by homogenous vertices matrix
     set(bottleCap, 'Vertices', transformedVertsCap(:, 1:3));
-    drawnow;
+    
+
     br.model.animate(qMatb(k,:));    
 
     grip.model.base = br.model.fkine(qMatb(k,:));
@@ -225,7 +227,7 @@ for k=1:steps
     %% Generating a random cube! Placing it here bc why not...
     [cubePoints] = generatingCubeMesh();
     %}
-    
+
     % Recalculate transformations for each link in UR3 for each step
     tr(:,:,1) = r.model.base;
     for i = 1:5
