@@ -1,4 +1,4 @@
-function BrushBot_GUI
+function BrushBot_GUI(Bot)
     % Initialize the GUI and BrushBot model
     close all;
 
@@ -6,8 +6,8 @@ function BrushBot_GUI
     fig = uifigure('Name', 'BrushBot Control', 'Position', [100 100 700 700]);
 
     % Initialize the BrushBot model and store it in UserData
-    brushBot = BrushBot();  
-    brushBot.CreateModel();  
+    brushBot = Bot;  
+    brushBot.CreateModel;  
 
     % Store the BrushBot object and E-Stop state in UserData
     fig.UserData = struct('robot', brushBot, 'eStop', false);  

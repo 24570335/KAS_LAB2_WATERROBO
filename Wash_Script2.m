@@ -1,4 +1,20 @@
-%% Main script:
+classdef Wash_Script2
+    %#ok<*NASGU>
+    %#ok<*NOPRT>
+    %#ok<*TRYNC>
+    
+    % Calling the functions from down below in my class:
+    methods 
+        function self = Wash_Script2()
+            clf
+            clc
+            self.main();
+        end
+    end 
+
+    methods(Static)
+        function main()
+            %% Main script:
 % Initialising robot and base:
 figure('Name', 'Kitchen Environment');
 hold on
@@ -137,7 +153,7 @@ collisionDetectedBr = false;
 
 %GUI;
 %GUI.BrushBotGUI(br);
-BrushBotGUI(br);
+%BrushBotGUI(br);
 
 %% Moving UR3e to bottle WITH RMRC??
 q1 = waypointsUR3(1,:);
@@ -697,49 +713,49 @@ function [cubePoints] = generatingCubeMesh()
 end
 
 
+%{
 function BrushBotGUI(BrushBot)
-    % Use the existing figure for GUI elements instead of creating a new one
-    fig = gcf;  % Use current figure
-    hold on;  % Keep existing environment in place
+    % Create a new figure for GUI elements positioned on the left
+    fig = figure('Name', 'BrushBot Control', 'Position', [100, 100, 400, 700]);  % Position the GUI on the left side
 
     % Initialize the BrushBot model and store it in UserData
     brushBot = BrushBot;
-    fig.UserData = struct('robot', brushBot, 'eStop', false);  
+    fig.UserData = struct('robot', brushBot, 'eStop', false);
 
     % Joint sliders with labels
     numJoints = brushBot.model.n;  
     for i = 1:numJoints
-        uicontrol('Style', 'text', 'Position', [-40, 630 - (i * 30), 50, 10], ...
-            'String', sprintf('J%d', i), 'FontSize', 8);
-        uicontrol('Style', 'slider', 'Position', [10, 630 - (i * 30), 150, 10], ...
+        uicontrol('Style', 'text', 'Position', [30, 630 - (i * 50), 100, 20], ...
+            'String', sprintf('Joint %d', i));
+        uicontrol('Style', 'slider', 'Position', [130, 630 - (i * 50), 200, 20], ...
             'Min', -pi, 'Max', pi, 'Value', 0, ...
             'Callback', @(sld, ~)update_joint(i, get(sld, 'Value')));
     end
 
     % E-Stop button
-    uicontrol('Style', 'pushbutton', 'Position', [10, 50, 60, 20], 'String', 'E-Stop', ...
-        'BackgroundColor', 'red', 'FontSize', 10, ...
+    uicontrol('Style', 'pushbutton', 'Position', [30, 50, 100, 40], 'String', 'E-Stop', ...
+        'BackgroundColor', 'red', 'FontSize', 14, ...
         'Callback', @(btn, ~)toggle_e_stop());
 
     % Teach mode section
-    uicontrol('Style', 'text', 'Position', [10, 150, 80, 10], 'String', 'Enable Teach', 'FontSize', 8);
-    uicontrol('Style', 'pushbutton', 'Position', [10, 120, 60, 20], 'String', 'Teach Mode', ...
+    uicontrol('Style', 'text', 'Position', [67, 150, 200, 20], 'String', 'Enable Teach');
+    uicontrol('Style', 'pushbutton', 'Position', [30, 100, 100, 40], 'String', 'Teach Mode', ...
         'Callback', @(~,~)activate_teach_mode());
 
     % D-pad directional controls label
-    uicontrol('Style', 'text', 'Position', [10, 250, 80, 10], 'String', 'Directional Controls', 'FontSize', 8);
+    uicontrol('Style', 'text', 'Position', [150, 200, 200, 20], 'String', 'Directional Controls');
 
     % D-pad movement buttons
-    uicontrol('Style', 'pushbutton', 'Position', [30, 220, 40, 10], 'String', 'Up', ...
+    uicontrol('Style', 'pushbutton', 'Position', [170, 150, 60, 40], 'String', 'Up', ...
         'Callback', @(~,~)move_robot('up'));
-    uicontrol('Style', 'pushbutton', 'Position', [10, 190, 40, 10], 'String', 'Left', ...
+    uicontrol('Style', 'pushbutton', 'Position', [110, 100, 60, 40], 'String', 'Left', ...
         'Callback', @(~,~)move_robot('left'));
-    uicontrol('Style', 'pushbutton', 'Position', [30, 160, 40, 10], 'String', 'Down', ...
+    uicontrol('Style', 'pushbutton', 'Position', [170, 100, 60, 40], 'String', 'Down', ...
         'Callback', @(~,~)move_robot('down'));
-    uicontrol('Style', 'pushbutton', 'Position', [50, 190, 40, 10], 'String', 'Right', ...
+    uicontrol('Style', 'pushbutton', 'Position', [230, 100, 60, 40], 'String', 'Right', ...
         'Callback', @(~,~)move_robot('right'));
 
-    % Cartesian controls aligned to the left
+    % Cartesian controls
     add_cartesian_controls();
 
     %% Helper Functions
@@ -774,9 +790,9 @@ function BrushBotGUI(BrushBot)
         q = brushBot.model.getpos();
         stepSize = 0.1;
         switch direction
-            case 'up'
-                q(2) = q(2) + stepSize;
             case 'down'
+                q(2) = q(2) + stepSize;
+            case 'up'
                 q(2) = q(2) - stepSize;
             case 'left'
                 q(1) = q(1) + stepSize;
@@ -799,17 +815,22 @@ function BrushBotGUI(BrushBot)
     end
 
     function add_cartesian_controls()
-        uicontrol('Style', 'pushbutton', 'Position', [10, 300, 50, 10], 'String', '+X', ...
+        % Cartesian control buttons without Parent specification
+        uicontrol('Style', 'pushbutton', 'Position', [30, 250, 100, 40], 'String', '+X', ...
             'Callback', @(~,~)move_cartesian([0.05, 0, 0]));
-        uicontrol('Style', 'pushbutton', 'Position', [10, 320, 50, 10], 'String', '-X', ...
+        uicontrol('Style', 'pushbutton', 'Position', [150, 250, 100, 40], 'String', '-X', ...
             'Callback', @(~,~)move_cartesian([-0.05, 0, 0]));
-        uicontrol('Style', 'pushbutton', 'Position', [10, 340, 50, 10], 'String', '+Y', ...
+        uicontrol('Style', 'pushbutton', 'Position', [30, 200, 100, 40], 'String', '+Y', ...
             'Callback', @(~,~)move_cartesian([0, 0.05, 0]));
-        uicontrol('Style', 'pushbutton', 'Position', [10, 360, 50, 10], 'String', '-Y', ...
+        uicontrol('Style', 'pushbutton', 'Position', [150, 200, 100, 40], 'String', '-Y', ...
             'Callback', @(~,~)move_cartesian([0, -0.05, 0]));
-        uicontrol('Style', 'pushbutton', 'Position', [10, 380, 50, 10], 'String', '+Z', ...
+        uicontrol('Style', 'pushbutton', 'Position', [30, 150, 100, 40], 'String', '+Z', ...
             'Callback', @(~,~)move_cartesian([0, 0, 0.05]));
-        uicontrol('Style', 'pushbutton', 'Position', [10, 400, 50, 10], 'String', '-Z', ...
+        uicontrol('Style', 'pushbutton', 'Position', [150, 150, 100, 40], 'String', '-Z', ...
             'Callback', @(~,~)move_cartesian([0, 0, -0.05]));
+    end
+end
+%}
+        end
     end
 end
