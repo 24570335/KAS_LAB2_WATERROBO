@@ -107,7 +107,7 @@ rect_alarm = plot3(rectPointsAlarm(:,1), rectPointsAlarm(:,2), rectPointsAlarm(:
 sizeMat = size(Yl);
 Xl = repmat(0.6, sizeMat(1), sizeMat(2)); % Y plane remains constant
 % Plot one side of the rectangle as a surface
-surf(Xl, Yl, Zl, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+surf(Xl, Yl, Zl, 'FaceAlpha', 0, 'EdgeColor', 'none');
 % Combine one surface as a point cloud
 rectPointsLightW = [Xl(:), Yl(:), Zl(:)];
 % Plot the rectangular prism's point cloud         

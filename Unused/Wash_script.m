@@ -70,7 +70,7 @@ end
 % Create a rectangular wall mesh
 [Xw, Zw] = meshgrid(-4:0.05:4, -5:0.05:5); % Different ranges for X and Z for a rectangle
 sizeMat = size(Xw);
-Yw = repmat(1.4, sizeMat(1), sizeMat(2)); % Y plane remains constant
+Yw = repmat(2, sizeMat(1), sizeMat(2)); % Y plane remains constant
 % Plot one side of the rectangle as a surface
 surf(Xw, Yw, Zw,'FaceAlpha', 0.3, 'EdgeColor', 'none');
 % Combine one surface as a point cloud
@@ -109,6 +109,9 @@ rect_alarm = plot3(rectPointsAlarm(:,1), rectPointsAlarm(:,2), rectPointsAlarm(:
 % flush(serialObj);
 % serialObj.UserData = struct("Data",[],"Count",1);
 % configureCallback(serialObj, "terminator", @(src, event) waitForButtonPress(src));
+
+%% Code for button
+%{
 delete(serialportfind);
 port_name = '/dev/cu.usbserial-14320';  % Adjust this if the port name is different
 baud_rate = 9600;  % Match the baud rate with the Arduino code
@@ -117,6 +120,7 @@ configureTerminator(serialObj, "CR/LF");
 flush(serialObj);
 serialObj.UserData = struct("Data", [], "Count", 1, "hardwareEstopPress", false);
 configureCallback(serialObj, "terminator", @(src, event) checkForEStop(src));
+%}
 
 %% Final intialisations for trajectory
 q0 = [0,0,0,0,0,0];
@@ -124,10 +128,11 @@ q0_b = [0,0,0,0,0];
 steps = 25;
 qmatopen = jtraj(grip.model.getpos(), qopen, steps);
 qmatclose = jtraj(qopen,qclose,steps);
+hardwareEstopPress = false;
 % Collision detection boolean
 collisionDetectedB = false;
 collisionDetectedBr = false;
-serialObj.UserData.hardwareEstopPress = false;
+%serialObj.UserData.hardwareEstopPress = false;
 
 %% Moving UR3e to bottle
 q1 = waypointsUR3(1,:);
@@ -135,12 +140,12 @@ qMat = jtraj(q0, q1, steps);
 q1b = waypointsBR(1,:);
 qMatb= jtraj(q0_b,q1b,steps);
 for j=1:steps
-    checkForEStop(serialObj);
+    %checkForEStop(serialObj);
     % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
+    % if serialObj.UserData.hardwareEstopPress
+    %     disp("E-Stop has been pressed.");
+    %     return;
+    % end
 
     r.model.animate(qMat(j, :)) % Animating the movement to bottle
     rawgrip.model.base = r.model.fkine(qMat(j,:));
@@ -321,12 +326,12 @@ longsteps = 100;
 qmatspin = jtraj(qspin0,qspin1, longsteps);
 
 for n = 1:longsteps
-    checkForEStop(serialObj);
+    % checkForEStop(serialObj);
     % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
+    % if serialObj.UserData.hardwareEstopPress
+    %     disp("E-Stop has been pressed.");
+    %     return;
+    % end
     r.model.animate(q2); % stay
     rawgrip.model.base = r.model.fkine(q2);
     rawgrip.model.animate([0,0,0]);
@@ -339,10 +344,10 @@ qMatb= jtraj(q2b,q3b,longsteps);
 for o = 1:longsteps
     checkForEStop(serialObj);
     % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
+    % if serialObj.UserData.hardwareEstopPress
+    %     disp("E-Stop has been pressed.");
+    %     return;
+    % end
     r.model.animate(q2); % stay
     rawgrip.model.base = r.model.fkine(q2);
     rawgrip.model.animate([0,0,0]);
@@ -391,12 +396,12 @@ end
 qMatb= jtraj(q3b,q0_b,longsteps);
 
 for s = 1:longsteps
-    checkForEStop(serialObj);
-    % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
+    % checkForEStop(serialObj);
+    % % Check if e-stop has been pressed
+    % if serialObj.UserData.hardwareEstopPress
+    %     disp("E-Stop has been pressed.");
+    %     return;
+    % end
 
     r.model.animate(q2); % stay
     rawgrip.model.base = r.model.fkine(q2);
@@ -447,12 +452,12 @@ end
 qMatb= jtraj(q0_b,q1b,longsteps);
 
 for t = 1:longsteps
-    checkForEStop(serialObj);
-    % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
+    % checkForEStop(serialObj);
+    % % Check if e-stop has been pressed
+    % if serialObj.UserData.hardwareEstopPress
+    %     disp("E-Stop has been pressed.");
+    %     return;
+    % end
     r.model.animate(q2); % stay
     rawgrip.model.base = r.model.fkine(q2);
     rawgrip.model.animate([0,0,0]);
@@ -497,12 +502,12 @@ end
 q2b = waypointsBR(2,:);
 qMatb = jtraj(q1b,q2b,longsteps);
 for p = 1:longsteps %return to wash
-    checkForEStop(serialObj);
-    % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
+    % checkForEStop(serialObj);
+    % % Check if e-stop has been pressed
+    % if serialObj.UserData.hardwareEstopPress
+    %     disp("E-Stop has been pressed.");
+    %     return;
+    % end
 
     r.model.animate(q2); % stay
     rawgrip.model.base = r.model.fkine(q2);
@@ -547,12 +552,12 @@ end
 
 
 for q = 1:longsteps %clean
-    checkForEStop(serialObj);
-    % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
+    % checkForEStop(serialObj);
+    % % Check if e-stop has been pressed
+    % if serialObj.UserData.hardwareEstopPress
+    %     disp("E-Stop has been pressed.");
+    %     return;
+    % end
     r.model.animate(q2); % stay
     rawgrip.model.base = r.model.fkine(q2);
     rawgrip.model.animate([0,0,0]);
@@ -568,12 +573,12 @@ q3b = waypointsBR(3,:);
 qMatb= jtraj(q2b,q3b,steps);
 
 for l = 1:steps
-    checkForEStop(serialObj);
-    % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
+    % checkForEStop(serialObj);
+    % % Check if e-stop has been pressed
+    % if serialObj.UserData.hardwareEstopPress
+    %     disp("E-Stop has been pressed.");
+    %     return;
+    % end
     r.model.animate(qMat(l,:)); % Animating the movement of a tipping position
     rawgrip.model.base = r.model.fkine(qMat(l,:));
     rawgrip.model.animate([0,0,0]);
@@ -664,12 +669,12 @@ qMat = jtraj(q3,q4,steps);
 q4b = waypointsBR(4,:);
 qMatb= jtraj(q3b,q4b,steps);
 for m=1:steps
-    checkForEStop(serialObj);
-    % Check if e-stop has been pressed
-    if serialObj.UserData.hardwareEstopPress
-        disp("E-Stop has been pressed.");
-        return;
-    end
+    % checkForEStop(serialObj);
+    % % Check if e-stop has been pressed
+    % if serialObj.UserData.hardwareEstopPress
+    %     disp("E-Stop has been pressed.");
+    %     return;
+    % end
     r.model.animate(qMat(m,:)) % Animating the movement to dry bottle
     rawgrip.model.base = r.model.fkine(qMat(m,:));
     rawgrip.model.animate([0,0,0]);
